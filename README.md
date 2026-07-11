@@ -6,7 +6,7 @@ Raah is a unified mobile application containing both the Commuter and Conductor 
 
 ## 🚀 1. The Fastest Way: Testing via Expo Go (Mac & Windows)
 
-**Expo Go** is a generic testing app that allows you to instantly run the JavaScript bundle on your physical phone without needing to compile any native code.
+**Expo Go** is a testing app that allows you to instantly run the JavaScript bundle on your physical phone without needing to compile any native code.
 
 > [!NOTE] 
 > This method works on both Mac and Windows PCs. You just need your computer and phone on the same Wi-Fi network.
@@ -84,6 +84,11 @@ If you are using custom native code or if Expo Go does not support your SDK vers
      npx expo start
      ```
    - The app on your iPhone will automatically connect to this server!
+   - Now once open the app ( it will say the developer is not trusted --> follow thses steps )
+   1. Open Settings on your iPhone
+   2. go to General, now go to VPN & Device Management.
+   3. under the Developer App : click the name, and click trust the developer
+   4. now re-open the app on iPhone and there you go , now test and use the app :)
 
 ### 🤖 Testing on a Physical Android (Mac or Windows)
 
