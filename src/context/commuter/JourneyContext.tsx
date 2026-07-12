@@ -4,6 +4,7 @@ type Journey = {
   busId: string;
   destination: string;
   from: string;
+  startTime: number;
 } | null;
 
 export type SavedPlace = {
@@ -35,16 +36,8 @@ interface JourneyContextType {
 
 const JourneyContext = createContext<JourneyContextType | undefined>(undefined);
 
-const initialPlaces: SavedPlace[] = [
-  { id: '1', alias: 'Home', address: '202 Turner Road, Bandra West', icon: '🏠', routes: ['507', '310'] },
-  { id: '2', alias: 'Work', address: 'G Block, BKC, Mumbai', icon: '💼', routes: ['AC71', '221'] },
-  { id: '3', alias: 'College', address: 'Vile Parle (W), Mumbai', icon: '🎓', routes: ['507'] }
-];
-
-const initialTrips: Trip[] = [
-  { id: 't1', busId: '507', from: 'Bandra Stn', destination: 'BKC Office', duration: '32 min', dateStr: 'Yesterday, 9:40 AM', cost: '₹18' },
-  { id: 't2', busId: 'AC71', from: 'BKC Office', destination: 'Bandra Stn', duration: '28 min', dateStr: 'Yesterday, 6:12 PM', cost: '₹35' }
-];
+const initialPlaces: SavedPlace[] = [];
+const initialTrips: Trip[] = [];
 
 export function JourneyProvider({ children }: { children: ReactNode }) {
   const [activeJourney, setActiveJourney] = useState<Journey>(null);
@@ -52,19 +45,22 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const [recentTrips, setRecentTrips] = useState<Trip[]>(initialTrips);
 
   const boardBus = (busId: string, destination: string, from: string) => {
-    setActiveJourney({ busId, destination, from });
+    setActiveJourney({ busId, destination, from, startTime: Date.now() });
   };
 
   const completeJourney = () => {
     if (activeJourney) {
+      const elapsedMs = Date.now() - activeJourney.startTime;
+      const elapsedMins = Math.max(1, Math.round(elapsedMs / 60000));
+      
       const newTrip: Trip = {
         id: Date.now().toString(),
         busId: activeJourney.busId,
         from: activeJourney.from,
         destination: activeJourney.destination,
-        duration: '42 min', // Mocked duration
+        duration: `${elapsedMins} min`,
         dateStr: 'Just now',
-        cost: '₹22', // Mocked cost
+        cost: `₹${Math.min(50, 10 + elapsedMins * 2)}`, // Base 10 + 2 per min
       };
       setRecentTrips(prev => [newTrip, ...prev]);
     }

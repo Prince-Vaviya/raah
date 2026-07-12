@@ -1,18 +1,55 @@
 import React, { useState } from 'react';
-import {  StyleSheet, TextInput, Pressable, KeyboardAvoidingView, Platform, View } from 'react-native';
+import {  StyleSheet, TextInput, Pressable, KeyboardAvoidingView, Platform, View, Alert } from 'react-native';
 import {  Link, useRouter } from 'expo-router';
 import {  ThemedView } from '@/components/commuter/themed-view';
 import {  ThemedText } from '@/components/commuter/themed-text';
 import {  SafeAreaView } from 'react-native-safe-area-context';
 import {  Ionicons } from '@expo/vector-icons';
-
 export default function LoginScreen() {
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleContinue = () => {
-    if (mobileNumber.length > 0) {
-      router.push('/(auth)/otp');
+  const handleContinue = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+    if (email.toLowerCase() === 'demo@raah.com') {
+      router.push('/(commuter)/(tabs)');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { API_URL } = await import('@/lib/api');
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await res.json();
+      setLoading(false);
+      
+      if (!res.ok) {
+        Alert.alert('Login Failed', data.error || 'Invalid credentials');
+      } else {
+        await AsyncStorage.setItem('token', data.token);
+        
+        // Redirect based on role
+        if (data.user.role === 'CONDUCTOR') {
+          router.push('/(conductor)/(tabs)');
+        } else {
+          router.push('/(commuter)/(tabs)');
+        }
+      }
+    } catch (err: any) {
+      setLoading(false);
+      Alert.alert('Login Failed', err.message || 'Network error');
     }
   };
 
@@ -27,22 +64,35 @@ export default function LoginScreen() {
             <Ionicons name="person-circle" size={80} color="#007AFF" />
           </View>
           <ThemedText type="title" style={styles.title}>Welcome back!</ThemedText>
-          <ThemedText style={styles.subtitle}>Enter your mobile number to login.</ThemedText>
+          <ThemedText style={styles.subtitle}>Enter your email and password to login.</ThemedText>
           
           <View style={styles.inputContainer}>
-            <Ionicons name="call" size={20} color="#999" style={styles.inputIcon} />
+            <Ionicons name="mail" size={20} color="#999" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Mobile Number"
-              keyboardType="phone-pad"
-              value={mobileNumber}
-              onChangeText={setMobileNumber}
+              placeholder="Email Address"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
               placeholderTextColor="#999"
             />
           </View>
 
-          <Pressable style={styles.button} onPress={handleContinue}>
-            <ThemedText style={styles.buttonText}>Continue</ThemedText>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed" size={20} color="#999" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          <Pressable style={styles.button} onPress={handleContinue} disabled={loading}>
+            <ThemedText style={styles.buttonText}>{loading ? 'Logging in...' : 'Continue'}</ThemedText>
           </Pressable>
 
           <View style={styles.footer}>

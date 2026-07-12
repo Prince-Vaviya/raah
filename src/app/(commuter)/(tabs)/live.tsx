@@ -5,34 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useJourney } from '@/context/commuter/JourneyContext';
+import { useTelemetrySocket } from '@/lib/ws';
 
 const { width, height } = Dimensions.get('window');
-
-// Mock route coordinates for the polyline
-const routeCoordinates = [
-  { latitude: 51.385, longitude: -0.115 }, // Thornton Rd area
-  { latitude: 51.383, longitude: -0.113 },
-  { latitude: 51.380, longitude: -0.114 }, // Purley Way
-  { latitude: 51.377, longitude: -0.115 },
-  { latitude: 51.374, longitude: -0.112 },
-  { latitude: 51.371, longitude: -0.114 }, // Down Purley Way
-];
-
-const defaultTimelineData = [
-  { id: 1, name: 'Bandra Station (W)', time: '9:08 AM', status: 'passed' },
-  { id: 2, name: 'Turner Road', time: '9:12 AM', status: 'passed' },
-  { id: 3, name: 'Linking Road Junction', time: '9:15 AM', status: 'passed' },
-  { id: 4, name: 'Santacruz Station', time: '9:22 AM', status: 'current' },
-  { id: 5, name: 'Vile Parle (W)', time: '9:28 AM', status: 'upcoming' },
-  { id: 6, name: 'Andheri Station', time: '9:36 AM', status: 'upcoming' },
-  { id: 7, name: 'BKC Office', time: '9:40 AM', status: 'destination' },
-];
-
-const nerulTimelineData = [
-  { id: 1, name: 'Sanpada', time: '10:00 AM', status: 'passed' },
-  { id: 2, name: 'Juinagar', time: '10:15 AM', status: 'current' },
-  { id: 3, name: 'Nerul', time: '10:30 AM', status: 'destination' },
-];
 
 export default function LiveScreen() {
   const router = useRouter();
@@ -105,8 +80,66 @@ export default function LiveScreen() {
     );
   }
 
-  const isNerulRoute = activeJourney.destination.toLowerCase().includes('nerul');
-  const activeTimeline = isNerulRoute ? nerulTimelineData : defaultTimelineData;
+  const [activeTimeline, setActiveTimeline] = useState<any[]>([]);
+  const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]);
+  const [busLocation, setBusLocation] = useState<{latitude: number, longitude: number} | null>(null);
+
+  // Subscribe to live telemetry via WebSocket for this specific trip/bus
+  const { telemetry } = useTelemetrySocket(activeJourney?.tripId || null);
+
+  React.useEffect(() => {
+    if (telemetry && telemetry.lat && telemetry.lng) {
+       setBusLocation({ latitude: telemetry.lat, longitude: telemetry.lng });
+    }
+  }, [telemetry]);
+
+  React.useEffect(() => {
+    if (activeJourney) {
+      const fetchStops = async () => {
+        try {
+          const { getLiveRoutes, getRouteDetails } = await import('@/lib/api');
+          const routes = await getLiveRoutes();
+          const targetRoute = routes.find((r: any) => r.routeName === activeJourney.busId);
+          
+          if (targetRoute) {
+            const routeDetails = await getRouteDetails(targetRoute.id);
+            const data = routeDetails.busStops || [];
+            if (targetRoute.polyline && targetRoute.polyline.length > 0) {
+              setRouteCoordinates(targetRoute.polyline.map((coord: number[]) => ({
+                latitude: coord[1],
+                longitude: coord[0]
+              })));
+            }
+            
+            // Map to timeline format
+            const mapped = data.map((stop: any, index: number) => {
+              let status = 'upcoming';
+              // Simple mock logic for status since we don't have realtime location matching here yet
+              if (index === 0) status = 'passed';
+              else if (index === 1) status = 'current';
+              else if (index === data.length - 1) status = 'destination';
+              
+              return {
+                id: stop.id,
+                name: stop.name,
+                time: 'ETA ' + (10 + index * 5) + ' min', // Mock ETA for now
+                status
+              };
+            });
+            setActiveTimeline(mapped);
+          } else {
+             setActiveTimeline([]);
+             setRouteCoordinates([]);
+          }
+        } catch (err) {
+          console.error("Failed to fetch stops for live journey", err);
+          setActiveTimeline([]);
+          setRouteCoordinates([]);
+        }
+      };
+      fetchStops();
+    }
+  }, [activeJourney]);
 
   return (
     <View style={styles.container}>
@@ -114,30 +147,43 @@ export default function LiveScreen() {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: 51.376,
-          longitude: -0.114,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+          latitude: routeCoordinates.length > 0 ? routeCoordinates[0].latitude : 19.0760,
+          longitude: routeCoordinates.length > 0 ? routeCoordinates[0].longitude : 72.8777,
+          latitudeDelta: 0.1,
+          longitudeDelta: 0.1,
         }}
       >
-        <Polyline
-          coordinates={routeCoordinates}
-          strokeColor="#007AFF" // Blue line
-          strokeWidth={6}
-        />
-        {/* Mock marker at start */}
-        <Marker coordinate={routeCoordinates[0]}>
-          <View style={styles.markerContainer}>
-            <Ionicons name="bus" size={16} color="#fff" />
-            <Text style={styles.markerText}>{activeJourney.from}</Text>
-          </View>
-        </Marker>
-        {/* Mock current location marker */}
-        <Marker coordinate={routeCoordinates[routeCoordinates.length - 1]}>
-          <View style={styles.navigationArrow}>
-            <Ionicons name="navigate" size={32} color="#007AFF" />
-          </View>
-        </Marker>
+        {routeCoordinates.length > 0 && (
+          <Polyline
+            coordinates={routeCoordinates}
+            strokeColor="#007AFF" // Blue line
+            strokeWidth={6}
+          />
+        )}
+        {routeCoordinates.length > 0 && (
+          <>
+            <Marker coordinate={routeCoordinates[0]}>
+              <View style={styles.markerContainer}>
+                <Ionicons name="location" size={16} color="#fff" />
+                <Text style={styles.markerText}>{activeJourney.from}</Text>
+              </View>
+            </Marker>
+            <Marker coordinate={routeCoordinates[routeCoordinates.length - 1]}>
+              <View style={styles.navigationArrow}>
+                <Ionicons name="navigate" size={32} color="#007AFF" />
+              </View>
+            </Marker>
+          </>
+        )}
+        
+        {busLocation && (
+          <Marker coordinate={busLocation} zIndex={999}>
+            <View style={[styles.markerContainer, { backgroundColor: '#10B981' }]}>
+              <Ionicons name="bus" size={16} color="#fff" />
+              <Text style={styles.markerText}>Bus {activeJourney.busId}</Text>
+            </View>
+          </Marker>
+        )}
       </MapView>
 
       {/* Header Overlay */}

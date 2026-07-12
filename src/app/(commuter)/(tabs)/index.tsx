@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActionChip } from '@/components/commuter/ui/ActionChip';
 import { BusCard } from '@/components/commuter/ui/BusCard';
 import { StopCard } from '@/components/commuter/ui/StopCard';
@@ -7,11 +7,67 @@ import { Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
+
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [userName, setUserName] = useState('Commuter');
+  const [nearbyStops, setNearbyStops] = useState<any[]>([]);
+  const [nearbyBuses, setNearbyBuses] = useState<any[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserName(user.name || user.email?.split('@')[0] || 'Commuter');
+        }
+      } catch (err) {}
+    };
+    
+    const fetchDashboardData = async () => {
+      try {
+        const { getLiveRoutes, getRouteDetails } = await import('@/lib/api');
+        
+        const routesData = await getLiveRoutes();
+        if (routesData && routesData.length > 0) {
+          const topBuses = routesData.slice(0, 2);
+          
+          try {
+            // Fetch details for nearby buses to get destination and fare
+            const detailedBuses = await Promise.all(topBuses.map(async (bus: any) => {
+              const details = await getRouteDetails(bus.id);
+              const stops = details.busStops || [];
+              const destination = stops.length > 0 ? stops[stops.length - 1].name : 'City Center';
+              const price = stops.length > 0 ? `₹${(stops.length * 2.5).toFixed(0)}` : '₹12';
+              return { ...bus, destination, price };
+            }));
+            setNearbyBuses(detailedBuses);
+
+            // Fetch stops from the first bus
+            if (detailedBuses[0].busStops && detailedBuses[0].busStops.length > 0) {
+              setNearbyStops(detailedBuses[0].busStops.slice(0, 3));
+            } else {
+              const details = await getRouteDetails(topBuses[0].id);
+              if (details.busStops) setNearbyStops(details.busStops.slice(0, 3));
+            }
+          } catch(err) {
+            console.error("Failed to fetch bus details", err);
+            setNearbyBuses(topBuses);
+          }
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      }
+    };
+
+    fetchUser();
+    fetchDashboardData();
+  }, []);
 
   const handleSearch = () => {
     if (searchQuery.trim().length > 0) {
@@ -33,16 +89,15 @@ export default function HomeScreen() {
           <View style={styles.topRow}>
             <View>
               <Text style={styles.greeting}>Good morning ☀️</Text>
-              <Text style={styles.name}>Prince V</Text>
+              <Text style={styles.name}>{userName}</Text>
               <View style={styles.locationContainer}>
                 <Ionicons name="location" size={14} color="#007AFF" />
                 <Text style={styles.locationText}>Bandra West, Mumbai</Text>
               </View>
             </View>
             <View style={styles.headerActions}>
-
               <View style={[styles.avatar, { backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>P</Text>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>{userName.charAt(0).toUpperCase()}</Text>
               </View>
             </View>
           </View>
@@ -81,9 +136,13 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stopsContent}>
-            <StopCard title="Bandra Station" distance="80m" routes="8 routes" />
-            <StopCard title="Turner Road" distance="200m" routes="5 routes" />
-            <StopCard title="Linking Road" distance="350m" routes="12 routes" />
+            {nearbyStops.length > 0 ? nearbyStops.map(stop => (
+              <StopCard key={stop.id} title={stop.name} distance="80m" routes="3 routes" />
+            )) : (
+              <View style={{ padding: 20 }}>
+                <Text style={{ color: '#666' }}>No stops found nearby.</Text>
+              </View>
+            )}
           </ScrollView>
 
           {/* Nearby Buses */}
@@ -92,24 +151,22 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </View>
           <View style={styles.busesContent}>
-            <BusCard
-              number="507"
-              destination="Andheri Stn (W)"
-              timeToArrive="3"
-              isLive={true}
-              price="₹12"
-              occupancyLevel={1}
-              href="/bus/507"
-            />
-            <BusCard
-              number="310"
-              destination="Churchgate"
-              timeToArrive="7"
-              isLive={true}
-              price="₹18"
-              occupancyLevel={2}
-              href="/bus/310"
-            />
+            {nearbyBuses.length > 0 ? nearbyBuses.map((bus, i) => (
+              <BusCard
+                key={bus.id}
+                number={bus.routeName || '101'}
+                destination={bus.destination || 'City Center'}
+                timeToArrive={`${3 + i * 4}`}
+                isLive={true}
+                price={bus.price || '₹12'}
+                occupancyLevel={i === 0 ? 1 : 2}
+                href={`/bus/${bus.id}`}
+              />
+            )) : (
+              <View style={{ padding: 20 }}>
+                <Text style={{ color: '#666' }}>No active buses nearby right now.</Text>
+              </View>
+            )}
           </View>
         </View>
 

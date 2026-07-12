@@ -7,12 +7,41 @@ export default function LoginScreen() {
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
 
-  // Mock login handler - accepts anything, we only care about role selection
-  const handleLogin = (role: 'commuter' | 'conductor') => {
-    if (role === 'commuter') {
-      router.push('/(commuter)/');
-    } else {
-      router.push('/(conductor)/');
+  const handleLogin = async (role: 'commuter' | 'conductor') => {
+    if (!employeeId || !password) {
+      alert('Please enter credentials');
+      return;
+    }
+
+    try {
+      const { API_URL } = await import('@/lib/api');
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      
+      const email = employeeId.includes('@') ? employeeId : `${employeeId}@raah.com`;
+      
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!res.ok) {
+        alert('Login failed. Please check your credentials.');
+        return;
+      }
+
+      const data = await res.json();
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+
+      if (role === 'commuter') {
+        router.push('/(commuter)/');
+      } else {
+        router.push('/(conductor)/');
+      }
+    } catch (err) {
+      console.error("Login error", err);
+      alert('An error occurred during login.');
     }
   };
 

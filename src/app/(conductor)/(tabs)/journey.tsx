@@ -5,21 +5,43 @@ import { ChevronRight } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
-const timelineData = [
-  { id: '1', name: 'Andheri East', time: '08:03', pax: '42 pax', status: 'past' },
-  { id: '2', name: 'Marol Naka', time: '08:18', pax: '38 pax', status: 'past' },
-  { id: '3', name: 'JB Nagar', time: '08:29', pax: '51 pax', status: 'past' },
-  { id: '4', name: 'Chakala', time: '08:41', pax: '44 pax', status: 'past' },
-  { id: '5', name: 'Airport Road', time: '08:55', pax: '36 pax', status: 'past' },
-  { id: '6', name: 'Kurla West', time: '09:08', pax: '63 pax', status: 'past' },
-  { id: '7', name: 'Vile Parle East', time: '09:17', pax: '71 pax', status: 'current', isNow: true },
-  { id: '8', name: 'Santacruz West', time: '09:21', pax: '', status: 'future' },
-  { id: '9', name: 'Bandra West', time: '09:36', pax: '', status: 'future' },
-  { id: '10', name: 'Dadar', time: '09:52', pax: '', status: 'future' },
-  { id: '11', name: 'CST Terminal', time: '11:48 AM', pax: '', status: 'future' },
-];
 
 export default function JourneyScreen() {
+  const [timelineData, setTimelineData] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchStops = async () => {
+      try {
+        const { getLiveRoutes, getRouteDetails } = await import('@/lib/api');
+        const routes = await getLiveRoutes();
+        const targetRoute = routes.find((r: any) => r.routeName === '507');
+        
+        if (targetRoute) {
+          const routeDetails = await getRouteDetails(targetRoute.id);
+          const data = routeDetails.busStops || [];
+          
+          const mapped = data.map((stop: any, index: number) => {
+            let status = 'future';
+            if (index < 6) status = 'past';
+            else if (index === 6) status = 'current';
+            
+            return {
+              id: stop.id,
+              name: stop.name,
+              time: '09:' + (10 + index * 5),
+              status,
+              isNow: status === 'current',
+              pax: index <= 6 ? `${40 + (index % 5)} pax` : ''
+            };
+          });
+          setTimelineData(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stops for journey", err);
+      }
+    };
+    fetchStops();
+  }, []);
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

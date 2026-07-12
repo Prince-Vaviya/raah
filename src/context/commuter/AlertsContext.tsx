@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
-
+import React, { createContext, useContext, useState, useEffect } from 'react';
 export type AlertType = 'warning' | 'danger' | 'info' | 'success';
 
 export interface Alert {
@@ -64,7 +63,34 @@ interface AlertsContextType {
 const AlertsContext = createContext<AlertsContextType | undefined>(undefined);
 
 export function AlertsProvider({ children }: { children: React.ReactNode }) {
-  const [alerts, setAlerts] = useState<Alert[]>(initialAlerts);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const { API_URL } = await import('@/lib/api');
+        const res = await fetch(`${API_URL}/alerts`);
+        if (res.ok) {
+          const data = await res.json();
+          setAlerts(data.map((a: any) => ({
+            id: a.id,
+            type: a.predictedGapMeters < 200 ? 'danger' : 'warning',
+            title: `Route ${a.trip?.route?.routeName || 'Alert'} Delay`,
+            description: a.confidenceNote || 'Bus is delayed',
+            time: new Date(a.createdAt).toLocaleTimeString(),
+            isRead: false
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch alerts:", err);
+      }
+    };
+
+    fetchAlerts();
+    // In a full implementation, we would listen to WS_URL for realtime alerts
+    // const interval = setInterval(fetchAlerts, 30000);
+    // return () => clearInterval(interval);
+  }, []);
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
 

@@ -13,6 +13,17 @@ export default function CommandsScreen() {
   const [bannerMessage, setBannerMessage] = useState('');
   const bannerAnim = useRef(new Animated.Value(-100)).current;
 
+  // Realtime Command State
+  const [activeCommand, setActiveCommand] = useState<any>(null);
+  
+  React.useEffect(() => {
+    // Assuming trip_id is contextually available. For demo, we just listen to all commands.
+    // Subscribe to new commands (mock WS for now)
+    // const ws = new WebSocket(WS_URL);
+    // ws.onmessage = (e) => { ... }
+    // return () => ws.close();
+  }, []);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [clarifyReason, setClarifyReason] = useState('');
   
@@ -175,11 +186,14 @@ export default function CommandsScreen() {
 
         {/* Notification Text */}
         <View style={styles.notificationRow}>
-          <Bell size={16} color="#EF4444" />
-          <Text style={styles.notificationText}>New command from Operator</Text>
+          <Bell size={16} color={activeCommand ? "#EF4444" : "#64748B"} />
+          <Text style={styles.notificationText}>
+            {activeCommand ? "New command from Operator" : "No active commands"}
+          </Text>
         </View>
 
         {/* Command Card */}
+        {activeCommand && (
         <View style={styles.commandCard}>
           
           {/* Card Header */}
@@ -190,8 +204,8 @@ export default function CommandsScreen() {
                 <Text style={styles.priorityText}>HIGH PRIORITY</Text>
               </View>
             </View>
-            <Text style={styles.commandTitle}>Hold Bus</Text>
-            <Text style={styles.vehicleNumber}>KA-01-AB-1234</Text>
+            <Text style={styles.commandTitle}>{activeCommand.type === 'HOLD' ? 'Hold Bus' : 'Reroute'}</Text>
+            <Text style={styles.vehicleNumber}>Trip ID: {activeCommand.trip_id?.substring(0,8)}...</Text>
           </View>
 
           {/* Card Body */}
@@ -203,7 +217,7 @@ export default function CommandsScreen() {
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>DURATION</Text>
-                <Text style={styles.infoValue}>3 Minutes</Text>
+                <Text style={styles.infoValue}>{Math.round(activeCommand.duration_sec / 60)} Minutes</Text>
               </View>
             </View>
 
@@ -213,7 +227,7 @@ export default function CommandsScreen() {
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>REASON</Text>
-                <Text style={styles.infoValue}>Traffic Congestion at Marol Naka</Text>
+                <Text style={styles.infoValue}>{activeCommand.reason || 'Traffic Congestion'}</Text>
               </View>
             </View>
 
@@ -223,7 +237,7 @@ export default function CommandsScreen() {
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>TIME RECEIVED</Text>
-                <Text style={styles.infoValue}>09:23:14 AM</Text>
+                <Text style={styles.infoValue}>{new Date(activeCommand.created_at).toLocaleTimeString()}</Text>
               </View>
             </View>
 
@@ -231,12 +245,21 @@ export default function CommandsScreen() {
             <View style={styles.noteContainer}>
               <Text style={styles.noteLabel}>OPERATOR NOTE</Text>
               <Text style={styles.noteText}>
-                Please hold at current position. Emergency vehicle approaching from Signal-4. Resume when cleared.
+                {activeCommand.reason ? `Please follow operator instruction: ${activeCommand.reason}. Resume when cleared.` : `Please hold at current position. Resume when cleared.`}
               </Text>
             </View>
 
-            {/* Action Buttons */}
-            <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptCommand}>
+            <TouchableOpacity style={styles.acceptButton} onPress={async () => {
+              // Update status to ACCEPTED via API
+              try {
+                const { fetchWithAuth } = await import('@/lib/api');
+                await fetchWithAuth(`/commands/${activeCommand.id}/accept`, { method: 'POST' });
+              } catch (err) {
+                console.error("Failed to accept command", err);
+              }
+              handleAcceptCommand();
+              setActiveCommand(null);
+            }}>
               <CheckCircle size={20} color="#FFFFFF" />
               <Text style={styles.acceptText}>Accept Command</Text>
             </TouchableOpacity>
@@ -249,6 +272,7 @@ export default function CommandsScreen() {
 
           </View>
         </View>
+        )}
 
       </ScrollView>
       </SafeAreaView>

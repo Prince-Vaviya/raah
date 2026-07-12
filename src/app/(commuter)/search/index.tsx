@@ -4,13 +4,26 @@ import {  useLocalSearchParams, useRouter } from 'expo-router';
 import {  SafeAreaView } from 'react-native-safe-area-context';
 import {  Ionicons } from '@expo/vector-icons';
 import {  BusCard } from '@/components/commuter/ui/BusCard';
-
 export default function SearchResultsScreen() {
   const { query } = useLocalSearchParams<{ query: string }>();
   const router = useRouter();
 
-  // The requested destination or a fallback
   const destination = query || 'Nerul';
+
+  const [routes, setRoutes] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const { getLiveRoutes } = await import('@/lib/api');
+        const data = await getLiveRoutes();
+        if (data) setRoutes(data.slice(0, 5));
+      } catch (err) {
+        console.error('Failed to fetch routes', err);
+      }
+    };
+    fetchRoutes();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -55,33 +68,22 @@ export default function SearchResultsScreen() {
         <Text style={styles.sectionTitle}>Buses on this route</Text>
         
         <View style={styles.busesList}>
-          <BusCard
-            number="105"
-            destination={destination}
-            timeToArrive="4"
-            isLive={true}
-            price="₹15"
-            occupancyLevel={2}
-            href={`/bus/105?destination=${destination}&fare=₹15&from=Sanpada`}
-          />
-          <BusCard
-            number="112 AC"
-            destination={destination}
-            timeToArrive="12"
-            isLive={true}
-            price="₹25"
-            occupancyLevel={1}
-            href={`/bus/112?destination=${destination}&fare=₹25&from=Sanpada`}
-          />
-          <BusCard
-            number="507"
-            destination={`${destination} (via Highway)`}
-            timeToArrive="18"
-            isLive={false}
-            price="₹15"
-            occupancyLevel={3}
-            href={`/bus/507?destination=${destination}&fare=₹15&from=Sanpada`}
-          />
+          {routes.length > 0 ? (
+            routes.map(route => (
+              <BusCard
+                key={route.id}
+                number={route.routeName}
+                destination={`${destination}`}
+                timeToArrive={Math.floor(Math.random() * 20 + 2).toString()} // Mock ETA for now
+                isLive={true}
+                price="₹15"
+                occupancyLevel={Math.floor(Math.random() * 3) + 1} // Mock occupancy
+                href={`/bus/${route.routeName}?destination=${destination}&fare=₹15&from=Sanpada`}
+              />
+            ))
+          ) : (
+            <Text style={{ color: '#64748B', textAlign: 'center', marginTop: 20 }}>No routes found.</Text>
+          )}
         </View>
 
       </ScrollView>

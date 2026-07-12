@@ -4,73 +4,84 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Animat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Send } from 'lucide-react-native';
 
-type OperatorChatScreenProps = {
-  
-};
-
 type Message = {
   id: string;
-  text: string;
-  sender: 'operator' | 'conductor';
-  timestamp: string;
+  message: string;
+  sender_role: 'CONDUCTOR' | 'OPERATOR';
+  created_at: string;
 };
 
-export default function OperatorChatScreen() { const router = useRouter();
+export default function OperatorChatScreen() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const getCurrentTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const [tripId, setTripId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Automated chat sequence
-    const sequence = async () => {
-      // 1. Wait a bit, then Operator starts typing
-      await new Promise(r => setTimeout(r, 800));
-      setIsTyping(true);
-      
-      // 2. Operator sends first message
-      await new Promise(r => setTimeout(r, 2000));
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: '1',
-        text: 'Good morning, theres a pothole on route 507-C, mg road, take a left and head to nearest next stop',
-        sender: 'operator',
-        timestamp: getCurrentTime()
-      }]);
-
-      // 3. Conductor (auto-reply for simulation purposes, or we could let the user type it)
-      // The instructions said: "and conductor replying ok, then operator replying happy journey with emoji"
-      // Let's automate the conductor's reply as requested to simulate the full interaction
-      await new Promise(r => setTimeout(r, 2500));
-      setMessages(prev => [...prev, {
-        id: '2',
-        text: 'ok',
-        sender: 'conductor',
-        timestamp: getCurrentTime()
-      }]);
-
-      // 4. Operator starts typing again
-      await new Promise(r => setTimeout(r, 1000));
-      setIsTyping(true);
-
-      // 5. Operator sends final message
-      await new Promise(r => setTimeout(r, 1500));
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: '3',
-        text: 'Happy journey 🚌✨',
-        sender: 'operator',
-        timestamp: getCurrentTime()
-      }]);
+    const initChat = async () => {
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const storedTripId = await AsyncStorage.getItem('activeTripId');
+        if (storedTripId) {
+          setTripId(storedTripId);
+        }
+      } catch (err) {
+        console.error("Failed to load tripId from storage", err);
+      }
     };
-
-    sequence();
+    initChat();
   }, []);
+
+  useEffect(() => {
+    if (!tripId) return;
+
+    // Initial fetch
+    const fetchMessages = async () => {
+      try {
+        const { fetchWithAuth } = await import('@/lib/api');
+        const res = await fetchWithAuth(`/chat?tripId=${tripId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessages(data as Message[]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch chat", err);
+      }
+    };
+    fetchMessages();
+
+    // Poll for new messages every 3 seconds
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [tripId]);
+
+  const handleSend = async () => {
+    if (!inputText.trim() || !tripId) return;
+    
+    const textToSend = inputText;
+    setInputText('');
+    
+    const newMsg: Message = {
+      id: Date.now().toString(),
+      message: textToSend,
+      sender_role: 'CONDUCTOR',
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, newMsg]);
+
+    try {
+      const { fetchWithAuth } = await import('@/lib/api');
+      await fetchWithAuth('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tripId, message: textToSend })
+      });
+    } catch (err) {
+      console.error("Failed to send message", err);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -98,29 +109,25 @@ export default function OperatorChatScreen() { const router = useRouter();
             key={msg.id} 
             style={[
               styles.messageBubble, 
-              msg.sender === 'operator' ? styles.bubbleOperator : styles.bubbleConductor
+              msg.sender_role === 'OPERATOR' ? styles.bubbleOperator : styles.bubbleConductor
             ]}
           >
             <Text style={[
               styles.messageText,
-              msg.sender === 'operator' ? styles.textOperator : styles.textConductor
+              msg.sender_role === 'OPERATOR' ? styles.textOperator : styles.textConductor
             ]}>
-              {msg.text}
+              {msg.message}
             </Text>
             <Text style={[
               styles.timeText,
-              msg.sender === 'operator' ? styles.timeOperator : styles.timeConductor
+              msg.sender_role === 'OPERATOR' ? styles.timeOperator : styles.timeConductor
             ]}>
-              {msg.timestamp}
+              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
         ))}
 
-        {isTyping && (
-          <View style={styles.typingIndicator}>
-            <Text style={styles.typingText}>Operator is typing...</Text>
-          </View>
-        )}
+
       </ScrollView>
 
       {/* Input Area */}
@@ -130,8 +137,9 @@ export default function OperatorChatScreen() { const router = useRouter();
           placeholder="Type a message..."
           value={inputText}
           onChangeText={setInputText}
+          onSubmitEditing={handleSend}
         />
-        <TouchableOpacity style={styles.sendButton}>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
           <Send size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>

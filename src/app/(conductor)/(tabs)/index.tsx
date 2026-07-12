@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Animated, Modal, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight, SkipForward, Clock, Users, MessageSquare, AlertCircle, Square, CheckCircle, ArrowLeft, MapPin, Route, User } from 'lucide-react-native';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -11,6 +13,55 @@ type DashboardScreenProps = {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const [tripInfo, setTripInfo] = useState<any>(null);
+  const [routeInfo, setRouteInfo] = useState<any>(null);
+
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        const { fetchWithAuth, getRouteDetails } = await import('@/lib/api');
+        const tripsRes = await fetchWithAuth('/trips/active');
+        const trips = await tripsRes.json();
+        
+        if (trips && trips.length > 0) {
+          const activeTrip = trips[0];
+          setTripInfo(activeTrip);
+          
+          const routeDetails = await getRouteDetails(activeTrip.routeId);
+          setRouteInfo(routeDetails);
+
+          // Start tracking
+          let { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+          if (fgStatus !== 'granted') return;
+          await Location.requestBackgroundPermissionsAsync();
+          
+          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+          await AsyncStorage.setItem('activeTripId', activeTrip.id);
+
+          await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 5000,
+            distanceInterval: 10,
+            foregroundService: {
+              notificationTitle: 'Live Trip Tracking Active',
+              notificationBody: 'You are sharing your bus location with commuters.',
+              notificationColor: '#4285F4',
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Failed to init conductor app", err);
+      }
+    };
+
+    initApp();
+
+    return () => {
+      Location.stopLocationUpdatesAsync('BACKGROUND_LOCATION_TASK').catch(() => {});
+    };
+  }, []);
   
   // Banner state
   const [bannerVisible, setBannerVisible] = useState(false);
@@ -84,8 +135,11 @@ export default function DashboardScreen() {
                 style={styles.completedImage}
                 resizeMode="contain"
               />
-              <Text style={styles.completedTitle}>Trip Completed</Text>
-              <Text style={styles.completedSubtitle}>Route 507-C • Andheri East → CST Terminal</Text>
+              <Text style={styles.completedSubtitle}>
+                {routeInfo && routeInfo.busStops?.length > 0
+                  ? `Route ${routeInfo.routeName} • ${routeInfo.busStops[0].name} → ${routeInfo.busStops[routeInfo.busStops.length - 1].name}`
+                  : 'Route Details Loading...'}
+              </Text>
             </View>
 
             <View style={styles.statsGrid}>
@@ -176,7 +230,7 @@ export default function DashboardScreen() {
           {/* Header Section */}
           <View style={styles.header}>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.routeText}>Route 507-C • MH-12</Text>
+              <Text style={styles.routeText}>{routeInfo ? `Route ${routeInfo.routeName}` : 'Loading...'} • {tripInfo?.busNumber || 'Bus'}</Text>
               <Text style={styles.titleText}>Live Journey</Text>
               
               <View style={styles.statusRow}>
@@ -199,20 +253,26 @@ export default function DashboardScreen() {
             <View style={styles.progressHeaderRow}>
               <View>
                 <Text style={styles.labelSmall}>CURRENT STOP</Text>
-                <Text style={styles.stopName}>Vile Parle East</Text>
-                <Text style={styles.stopIndex}>Stop 9 of 24</Text>
+                <Text style={styles.stopName}>
+                  {routeInfo?.busStops?.length > 0 ? routeInfo.busStops[0].name : '...'}
+                </Text>
+                <Text style={styles.stopIndex}>Stop 1 of {routeInfo?.busStops?.length || '?'}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.labelSmall}>ETA NEXT</Text>
-                <Text style={styles.etaNextText}>4 min</Text>
+                <Text style={styles.etaNextText}>- min</Text>
               </View>
             </View>
 
             <View style={styles.progressBarContainer}>
               <View style={styles.progressLabels}>
-                <Text style={styles.progressLabel}>Andheri East</Text>
-                <Text style={styles.progressPercentage}>38%</Text>
-                <Text style={styles.progressLabel}>CST Terminal</Text>
+                <Text style={styles.progressLabel}>
+                  {routeInfo?.busStops?.length > 0 ? routeInfo.busStops[0].name : '...'}
+                </Text>
+                <Text style={styles.progressPercentage}>0%</Text>
+                <Text style={styles.progressLabel}>
+                  {routeInfo?.busStops?.length > 1 ? routeInfo.busStops[routeInfo.busStops.length - 1].name : '...'}
+                </Text>
               </View>
               <View style={styles.progressBarBackground}>
                 <View style={styles.progressBarFill} />
@@ -222,12 +282,14 @@ export default function DashboardScreen() {
             <View style={styles.nextStopRow}>
               <View>
                 <Text style={styles.labelSmall}>Next Stop</Text>
-                <Text style={styles.nextStopName}>Santacruz West</Text>
+                <Text style={styles.nextStopName}>
+                  {routeInfo?.busStops?.length > 1 ? routeInfo.busStops[1].name : '...'}
+                </Text>
               </View>
               <ArrowRight size={16} color="#CBD5E1" />
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.labelSmall}>Final ETA</Text>
-                <Text style={styles.finalEtaText}>11:45 AM</Text>
+                <Text style={styles.finalEtaText}>-:-</Text>
               </View>
             </View>
           </View>

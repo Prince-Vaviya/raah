@@ -109,17 +109,16 @@ export default function AlertsScreen() {
   const router = useRouter();
   const { alerts, unreadCount, markAllAsRead, markAsRead } = useAlerts();
 
-  const getIconForType = (id: string, type: string) => {
-    switch (id) {
-      case '1': return <Ionicons name="warning" size={18} color="#333" />;
-      case '2': return <Text style={{ fontSize: 16 }}>🚨</Text>;
-      case '3': return <Text style={{ fontSize: 16 }}>🌧️</Text>;
-      case '4': return (
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case 'warning': return <Ionicons name="warning" size={18} color="#F59E0B" />;
+      case 'danger': return <Text style={{ fontSize: 16 }}>🚨</Text>;
+      case 'info': return <Ionicons name="information-circle" size={18} color="#3B82F6" />;
+      case 'success': return (
         <View style={{ backgroundColor: '#10B981', borderRadius: 4, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}>
           <Ionicons name="checkmark" size={14} color="#fff" />
         </View>
       );
-      case '5': return <Ionicons name="build-outline" size={18} color="#475569" />;
       default: return <Ionicons name="notifications" size={18} color="#333" />;
     }
   };
@@ -156,7 +155,7 @@ export default function AlertsScreen() {
             <AlertCard
               key={alert.id}
               alert={alert}
-              icon={getIconForType(alert.id, alert.type)}
+              icon={getIconForType(alert.type)}
               onRead={() => markAsRead(alert.id)}
             />
           ))}

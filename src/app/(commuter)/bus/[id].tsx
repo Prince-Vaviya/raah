@@ -8,42 +8,69 @@ import {  useJourney } from '@/context/commuter/JourneyContext';
 
 const { width, height } = Dimensions.get('window');
 
-// Mock route coordinates for the polyline (California Bay Area like the reference)
-const routeCoordinates = [
-  { latitude: 37.871, longitude: -122.272 }, // Berkeley
-  { latitude: 37.865, longitude: -122.285 },
-  { latitude: 37.840, longitude: -122.290 },
-  { latitude: 37.810, longitude: -122.280 },
-  { latitude: 37.804, longitude: -122.271 }, // Oakland
-];
 
-const defaultTimelineData = [
-  { id: 1, name: 'Bandra Station (W)', time: '9:08 AM', status: 'passed' },
-  { id: 2, name: 'Turner Road', time: '9:12 AM', status: 'passed' },
-  { id: 3, name: 'Linking Road Junction', time: '9:15 AM', status: 'passed' },
-  { id: 4, name: 'Santacruz Station', time: '9:22 AM', status: 'current' },
-  { id: 5, name: 'Vile Parle (W)', time: '9:28 AM', status: 'upcoming' },
-  { id: 6, name: 'Andheri Station', time: '9:36 AM', status: 'upcoming' },
-  { id: 7, name: 'BKC Office', time: '9:40 AM', status: 'destination' },
-];
-
-const nerulTimelineData = [
-  { id: 1, name: 'Sanpada', time: '10:00 AM', status: 'passed' },
-  { id: 2, name: 'Juinagar', time: '10:15 AM', status: 'current' },
-  { id: 3, name: 'Nerul', time: '10:30 AM', status: 'destination' },
-];
 
 export default function BusDetailScreen() {
   const { id, destination, fare, from } = useLocalSearchParams<{ id: string, destination?: string, fare?: string, from?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const isNerulRoute = destination?.toLowerCase().includes('nerul');
-  const activeTimeline = isNerulRoute ? nerulTimelineData : defaultTimelineData;
-  const displayDestination = destination || 'Andheri Station';
-  const displayFare = fare || '₹18';
-  const displayTime = isNerulRoute ? '15 min' : '32 min';
-  const displayFrom = from || 'Bandra Station (W)';
+  const [activeTimeline, setActiveTimeline] = React.useState<any[]>([]);
+  const [routeCoordinates, setRouteCoordinates] = React.useState<any[]>([]);
+  const [routeStart, setRouteStart] = React.useState<string>('Unknown Origin');
+  const [routeEnd, setRouteEnd] = React.useState<string>('Unknown Destination');
+  const [totalFare, setTotalFare] = React.useState<string>('₹0');
+
+  React.useEffect(() => {
+    const fetchStops = async () => {
+      try {
+        const { getLiveRoutes, getRouteDetails } = await import('@/lib/api');
+        const routes = await getLiveRoutes();
+        const targetRoute = routes.find((r: any) => r.routeName === id);
+        
+        if (targetRoute) {
+          const routeDetails = await getRouteDetails(targetRoute.id);
+          const data = routeDetails.busStops || [];
+          
+          if (targetRoute.polyline && targetRoute.polyline.length > 0) {
+            setRouteCoordinates(targetRoute.polyline.map((coord: number[]) => ({
+              latitude: coord[1],
+              longitude: coord[0]
+            })));
+          }
+          
+          if (data.length > 0) {
+            setRouteStart(data[0].name);
+            setRouteEnd(data[data.length - 1].name);
+            setTotalFare(`₹${(data.length * 2.5).toFixed(0)}`);
+          }
+
+          const mapped = data.map((stop: any, index: number) => {
+            let status = 'upcoming';
+            if (index === 0) status = 'passed';
+            else if (index === 1) status = 'current';
+            else if (index === data.length - 1) status = 'destination';
+            
+            return {
+              id: stop.id,
+              name: stop.name,
+              time: 'ETA ' + (10 + index * 5) + ' min',
+              status
+            };
+          });
+          setActiveTimeline(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stops for bus details", err);
+      }
+    };
+    fetchStops();
+  }, [id]);
+
+  const displayDestination = destination || routeEnd;
+  const displayFare = fare || totalFare;
+  const displayTime = displayDestination.toLowerCase().includes('nerul') ? '15 min' : '32 min';
+  const displayFrom = from || routeStart;
 
   const { activeJourney, boardBus } = useJourney();
 
@@ -70,19 +97,25 @@ export default function BusDetailScreen() {
         <MapView
           style={styles.map}
           initialRegion={{
-            latitude: 37.840,
-            longitude: -122.280,
+            latitude: routeCoordinates.length > 0 ? routeCoordinates[0].latitude : 19.0760,
+            longitude: routeCoordinates.length > 0 ? routeCoordinates[0].longitude : 72.8777,
             latitudeDelta: 0.1,
             longitudeDelta: 0.1,
           }}
         >
-          <Polyline
-            coordinates={routeCoordinates}
-            strokeColor="#4A90E2"
-            strokeWidth={5}
-          />
-          <Marker coordinate={routeCoordinates[0]} pinColor="red" />
-          <Marker coordinate={routeCoordinates[routeCoordinates.length - 1]} pinColor="blue" />
+          {routeCoordinates.length > 0 && (
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeColor="#4A90E2"
+              strokeWidth={5}
+            />
+          )}
+          {routeCoordinates.length > 0 && (
+            <>
+              <Marker coordinate={routeCoordinates[0]} pinColor="red" />
+              <Marker coordinate={routeCoordinates[routeCoordinates.length - 1]} pinColor="blue" />
+            </>
+          )}
         </MapView>
       </View>
 
