@@ -62,24 +62,6 @@ export default function LiveScreen() {
     })
   ).current;
 
-  if (!activeJourney) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Ionicons name="bus-outline" size={64} color="#94A3B8" />
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginTop: 16 }}>No Active Journey</Text>
-        <Text style={{ fontSize: 15, color: '#64748B', marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
-          You haven't boarded a bus yet. Search for a route and click Board to track it live!
-        </Text>
-        <Pressable 
-          style={{ backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, marginTop: 24 }}
-          onPress={() => router.push('/')}
-        >
-          <Text style={{ color: '#fff', fontWeight: 'bold' }}>Find a Bus</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   const [activeTimeline, setActiveTimeline] = useState<any[]>([]);
   const [routeCoordinates, setRouteCoordinates] = useState<any[]>([]);
   const [busLocation, setBusLocation] = useState<{latitude: number, longitude: number} | null>(null);
@@ -140,6 +122,24 @@ export default function LiveScreen() {
       fetchStops();
     }
   }, [activeJourney]);
+
+  if (!activeJourney) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="bus-outline" size={64} color="#94A3B8" />
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginTop: 16 }}>No Active Journey</Text>
+        <Text style={{ fontSize: 15, color: '#64748B', marginTop: 8, textAlign: 'center', paddingHorizontal: 32 }}>
+          You haven't boarded a bus yet. Search for a route and click Board to track it live!
+        </Text>
+        <Pressable 
+          style={{ backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, marginTop: 24 }}
+          onPress={() => router.push('/')}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>Find a Bus</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

@@ -14,25 +14,12 @@ export default function LoginScreen() {
     }
 
     try {
-      const { API_URL } = await import('@/lib/api');
+      // Bypassing actual authentication as requested. Any credentials will work!
+      
+      // We still store a mock token so the rest of the app thinks we are logged in
       const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-      
-      const email = employeeId.includes('@') ? employeeId : `${employeeId}@raah.com`;
-      
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (!res.ok) {
-        alert('Login failed. Please check your credentials.');
-        return;
-      }
-
-      const data = await res.json();
-      await AsyncStorage.setItem('token', data.token);
-      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      await AsyncStorage.setItem('token', 'mock_token_123');
+      await AsyncStorage.setItem('user', JSON.stringify({ id: 1, email: employeeId, role: role }));
 
       if (role === 'commuter') {
         router.push('/(commuter)/');
@@ -40,8 +27,7 @@ export default function LoginScreen() {
         router.push('/(conductor)/');
       }
     } catch (err) {
-      console.error("Login error", err);
-      alert('An error occurred during login.');
+      console.error("Routing error", err);
     }
   };
 

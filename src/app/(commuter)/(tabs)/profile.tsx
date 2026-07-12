@@ -151,7 +151,12 @@ export default function ProfileScreen() {
             iconColor="#EF4444"
             isDestructive={true}
             hasChevron={false}
-            onPress={() => router.replace('/(auth)/login')}
+            onPress={async () => {
+              const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+              await AsyncStorage.removeItem('token');
+              await AsyncStorage.removeItem('user');
+              router.dismissAll();
+            }}
           />
         </View>
 

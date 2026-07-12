@@ -133,9 +133,11 @@ export default function ProfileScreen() {
           {/* Logout Button */}
           <TouchableOpacity 
             style={styles.logoutButton}
-            onPress={() => {
-              // @ts-ignore
-              router.push('Login');
+            onPress={async () => {
+              const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+              await AsyncStorage.removeItem('token');
+              await AsyncStorage.removeItem('user');
+              router.dismissAll();
             }}
           >
             <LogOut size={20} color="#FFFFFF" />

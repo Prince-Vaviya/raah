@@ -1,9 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './api';
-
-// Transform HTTP URL to WS URL
-const WS_URL = API_URL.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
+import { API_URL, WS_URL } from './api';
 
 export function useTelemetrySocket(tripId?: string | null) {
   const [telemetry, setTelemetry] = useState<any>(null);
