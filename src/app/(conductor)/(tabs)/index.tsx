@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowRight, SkipForward, Clock, Users, MessageSquare, AlertCircle, Square, CheckCircle, ArrowLeft, MapPin, Route, User, Wrench } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { API_URL, fetchWithAuth } from '@/lib/api';
 
 const { width } = Dimensions.get('window');
 
@@ -65,11 +66,11 @@ export default function DashboardScreen() {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
     if (tripInfo) {
       const fetchPacing = async () => {
         try {
-          const res = await fetch(`http://localhost:4000/api/trips/${tripInfo.id}/pacing`);
+          const res = await fetchWithAuth(`/trips/${tripInfo.id}/pacing`);
           if (res.ok) {
             const data = await res.json();
             setPacingInfo(data);
@@ -79,9 +80,11 @@ export default function DashboardScreen() {
         }
       };
       fetchPacing();
-      interval = setInterval(fetchPacing, 10000); // every 10s
+      intervalId = setInterval(fetchPacing, 10000);
+      return () => {
+        clearInterval(intervalId);
+      };
     }
-    return () => clearInterval(interval);
   }, [tripInfo]);
   
   // Banner state
@@ -105,12 +108,14 @@ export default function DashboardScreen() {
   const [isTripCompleted, setIsTripCompleted] = useState(false);
 
   useEffect(() => {
-    let broadcastInterval: NodeJS.Timeout;
+    let broadcastInterval: ReturnType<typeof setInterval>;
     if (tripInfo) {
       const fetchBroadcasts = async () => {
         try {
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') return;
           const loc = await Location.getCurrentPositionAsync({});
-          const res = await fetch(`http://localhost:4000/api/broadcasts/active?lat=${loc.coords.latitude}&lng=${loc.coords.longitude}`);
+          const res = await fetchWithAuth(`/broadcasts/active?lat=${loc.coords.latitude}&lng=${loc.coords.longitude}`);
           if (res.ok) {
             const data = await res.json();
             if (data && data.length > 0) {
@@ -154,8 +159,13 @@ export default function DashboardScreen() {
   const reportIncident = async (type: string) => {
     if (!tripInfo) return;
     try {
+      let { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showBanner('Location permission required');
+        return;
+      }
       const loc = await Location.getCurrentPositionAsync({});
-      await fetch('http://localhost:4000/api/incidents', {
+      await fetchWithAuth(`/incidents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -174,7 +184,7 @@ export default function DashboardScreen() {
   const reportHealthIssue = async () => {
     if (!tripInfo) return;
     try {
-      await fetch('http://localhost:4000/api/maintenance', {
+      await fetchWithAuth(`/maintenance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -458,7 +468,7 @@ export default function DashboardScreen() {
       <Modal visible={healthModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+            <View style={styles.header}>
               <Text style={styles.modalTitle}>Log Maintenance Issue</Text>
               <TouchableOpacity onPress={() => setHealthModalVisible(false)}>
                 <AlertCircle size={24} color="#94A3B8" />
@@ -487,7 +497,7 @@ export default function DashboardScreen() {
               multiline
             />
 
-            <TouchableOpacity style={styles.modalSubmitBtn} onPress={reportHealthIssue}>
+            <TouchableOpacity style={styles.modalSubmit} onPress={reportHealthIssue}>
               <Text style={styles.modalSubmitText}>Submit to Depot</Text>
             </TouchableOpacity>
           </View>
@@ -498,7 +508,7 @@ export default function DashboardScreen() {
       <Modal visible={!!activeBroadcast} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { borderColor: '#EAB308', borderWidth: 2 }]}>
-            <View style={[styles.modalHeader, { justifyContent: 'center' }]}>
+            <View style={[styles.header, { justifyContent: 'center' }]}>
               <AlertCircle size={32} color="#EAB308" style={{ marginBottom: 16 }} />
             </View>
             <Text style={[styles.modalTitle, { textAlign: 'center', fontSize: 20 }]}>Zone Broadcast Alert</Text>
@@ -509,7 +519,7 @@ export default function DashboardScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.modalSubmitBtn} onPress={() => setActiveBroadcast(null)}>
+            <TouchableOpacity style={styles.modalSubmit} onPress={() => setActiveBroadcast(null)}>
               <Text style={styles.modalSubmitText}>Acknowledge</Text>
             </TouchableOpacity>
           </View>

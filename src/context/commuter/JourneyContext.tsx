@@ -72,7 +72,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       id: Date.now().toString(),
       alias,
       address,
-      icon: '📍', // default icon
+      icon: 'location', // default icon
       routes: ['New!']
     };
     setSavedPlaces(prev => [...prev, newPlace]);

@@ -88,7 +88,10 @@ export default function HomeScreen() {
         <SafeAreaView edges={['top']} style={styles.headerContent}>
           <View style={styles.topRow}>
             <View>
-              <Text style={styles.greeting}>Good morning ☀️</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Text style={[styles.greeting, { marginBottom: 0, marginRight: 4 }]}>Good morning</Text>
+                <Ionicons name="sunny" size={16} color="#F59E0B" />
+              </View>
               <Text style={styles.name}>{userName}</Text>
               <View style={styles.locationContainer}>
                 <Ionicons name="location" size={14} color="#007AFF" />

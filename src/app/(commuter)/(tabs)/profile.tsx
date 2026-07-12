@@ -7,21 +7,21 @@ import { useRouter } from 'expo-router';
 const { width } = Dimensions.get('window');
 
 interface StatCardProps {
-  icon: string;
+  icon: React.ReactNode;
   value: string;
   label: string;
 }
 
 const StatCard = ({ icon, value, label }: StatCardProps) => (
   <View style={styles.statCard}>
-    <Text style={styles.statIcon}>{icon}</Text>
+    <View style={{ marginBottom: 8 }}>{icon}</View>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
 
 interface AchievementProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   isActive: boolean;
 }
@@ -29,7 +29,7 @@ interface AchievementProps {
 const Achievement = ({ icon, title, isActive }: AchievementProps) => (
   <View style={styles.achievementItem}>
     <View style={[styles.achievementIconBg, !isActive && { backgroundColor: '#F8FAFC' }]}>
-      <Text style={[styles.achievementIcon, !isActive && { opacity: 0.3 }]}>{icon}</Text>
+      <View style={!isActive && { opacity: 0.3 }}>{icon}</View>
     </View>
     <Text style={[styles.achievementTitle, !isActive && { color: '#94A3B8' }]}>{title}</Text>
   </View>
@@ -85,19 +85,19 @@ export default function ProfileScreen() {
 
         {/* Stats Row */}
         <View style={styles.statsRow}>
-          <StatCard icon="🚌" value="142" label="Trips" />
-          <StatCard icon="🌿" value="68 kg" label="CO₂ Saved" />
-          <StatCard icon="💰" value="₹2,840" label="Money Saved" />
+          <StatCard icon={<Ionicons name="bus" size={24} color="#1E293B" />} value="142" label="Trips" />
+          <StatCard icon={<Ionicons name="leaf" size={24} color="#1E293B" />} value="68 kg" label="CO₂ Saved" />
+          <StatCard icon={<Ionicons name="wallet" size={24} color="#1E293B" />} value="₹2,840" label="Money Saved" />
         </View>
 
         {/* Achievements Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Achievements</Text>
           <View style={styles.achievementsRow}>
-            <Achievement icon="🥇" title="100 Trips" isActive={true} />
-            <Achievement icon="🌿" title="Eco Rider" isActive={true} />
-            <Achievement icon="⚡" title="Early Bird" isActive={true} />
-            <Achievement icon="💰" title="Smart Saver" isActive={false} />
+            <Achievement icon={<Ionicons name="medal" size={22} color="#3B82F6" />} title="100 Trips" isActive={true} />
+            <Achievement icon={<Ionicons name="leaf" size={22} color="#3B82F6" />} title="Eco Rider" isActive={true} />
+            <Achievement icon={<Ionicons name="flash" size={22} color="#3B82F6" />} title="Early Bird" isActive={true} />
+            <Achievement icon={<Ionicons name="wallet" size={22} color="#3B82F6" />} title="Smart Saver" isActive={false} />
           </View>
         </View>
 

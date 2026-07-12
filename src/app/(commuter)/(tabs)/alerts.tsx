@@ -112,7 +112,7 @@ export default function AlertsScreen() {
   const getIconForType = (type: string) => {
     switch (type) {
       case 'warning': return <Ionicons name="warning" size={18} color="#F59E0B" />;
-      case 'danger': return <Text style={{ fontSize: 16 }}>🚨</Text>;
+      case 'danger': return <Ionicons name="alert-circle" size={18} color="#EF4444" />;
       case 'info': return <Ionicons name="information-circle" size={18} color="#3B82F6" />;
       case 'success': return (
         <View style={{ backgroundColor: '#10B981', borderRadius: 4, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }}>

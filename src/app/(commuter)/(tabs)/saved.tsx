@@ -25,7 +25,7 @@ interface PlaceCardProps {
 const PlaceCard = ({ title, address, icon, routes, onPress }: PlaceCardProps) => (
   <Pressable style={styles.cardContainer} onPress={onPress}>
     <View style={styles.placeIconWrapper}>
-      <Text style={styles.placeIconText}>{icon}</Text>
+      <Ionicons name={icon as any} size={24} color="#3B82F6" />
     </View>
     <View style={styles.placeInfo}>
       <Text style={styles.placeTitle}>{title}</Text>

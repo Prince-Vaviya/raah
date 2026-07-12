@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ThemedView } from '@/components/commuter/themed-view';
 import { ThemedText } from '@/components/commuter/themed-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MapPin } from 'lucide-react-native';
 
 export default function LocationPermissionScreen() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function LocationPermissionScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.content}>
         <View style={styles.iconContainer}>
-          <ThemedText style={styles.icon}>📍</ThemedText>
+          <MapPin size={40} color="#007AFF" />
         </View>
 
         <ThemedText type="title" style={styles.title}>Allow Location</ThemedText>

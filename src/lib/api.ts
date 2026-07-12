@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // In Expo/React Native, localhost points to the device itself.
 // We need to use the explicit IP address of the dev machine or 10.0.2.2 for Android emulators.
 // Assuming iOS Simulator for now, but often 127.0.0.1 or localhost works on iOS sim.
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:4000/api';
-export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://127.0.0.1:4000/ws';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.102:4000/api';
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.0.102:4000/ws';
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = await AsyncStorage.getItem('token');
@@ -27,15 +27,15 @@ export async function getLiveRoutes() {
     await initDB();
     dbInitialized = true;
   }
-  
+
   try {
     const res = await fetch(`${API_URL}/routes`);
     if (!res.ok) throw new Error('Failed to fetch routes');
     const data = await res.json();
-    
+
     // Cache for offline use (fire and forget to not block UI)
     cacheRoutes(data).catch(e => console.error('Cache write failed:', e));
-    
+
     return data;
   } catch (err) {
     console.warn('Network failed, falling back to cache:', err);

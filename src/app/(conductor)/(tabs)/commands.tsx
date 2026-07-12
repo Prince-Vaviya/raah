@@ -3,6 +3,7 @@ import {  View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated,
 import {  SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {  Bell, Clock, AlertTriangle, CheckCircle, ArrowLeft, Check, Play } from 'lucide-react-native';
 import {  useRouter, useNavigation } from 'expo-router';
+import { API_URL, fetchWithAuth } from '@/lib/api';
 
 export default function CommandsScreen() {
   const router = useRouter();
@@ -19,8 +20,14 @@ export default function CommandsScreen() {
   React.useEffect(() => {
     const fetchCommands = async () => {
       try {
-        // In a real app, you'd pass the specific tripId. Here we just fetch the latest PENDING command.
-        const res = await fetch('http://localhost:4000/api/commands');
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const activeTripId = await AsyncStorage.getItem('activeTripId');
+        
+        const url = activeTripId 
+          ? `/commands?tripId=${activeTripId}` 
+          : `/commands`;
+          
+        const res = await fetchWithAuth(url);
         if (res.ok) {
           const data = await res.json();
           const pending = data.find((c: any) => c.status === 'PENDING');
@@ -77,12 +84,22 @@ export default function CommandsScreen() {
   const handleAcceptCommand = async () => {
     if (!activeCommand) return;
     try {
-      const token = ''; // Add logic to get token if auth is required
-      await fetch(`http://localhost:4000/api/commands/${activeCommand.id}`, {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const token = await AsyncStorage.getItem('token') || '';
+      
+      const res = await fetchWithAuth(`/commands/${activeCommand.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({ status: 'ACCEPTED' })
       });
+      
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      
       showBanner('Executing command ...', () => {
         setIsCommandExecuted(true);
       });
@@ -99,13 +116,24 @@ export default function CommandsScreen() {
     if (clarifyReason.trim() !== '') {
       if (activeCommand) {
         try {
-          await fetch(`http://localhost:4000/api/commands/${activeCommand.id}`, {
+          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+          const token = await AsyncStorage.getItem('token') || '';
+          
+          const res = await fetchWithAuth(`/commands/${activeCommand.id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
             body: JSON.stringify({ status: 'REJECTED' })
           });
+          
+          if (!res.ok) {
+             throw new Error(`Server returned ${res.status}`);
+          }
         } catch (e) {
           console.error("Failed to reject command", e);
+          return; // Stop if failed
         }
       }
       setModalVisible(false);
@@ -293,18 +321,11 @@ export default function CommandsScreen() {
             <View style={styles.noteContainer}>
               <Text style={styles.noteLabel}>OPERATOR NOTE</Text>
               <Text style={styles.noteText}>
-                {activeCommand.reason ? `Please follow operator instruction: ${activeCommand.reason}. Resume when cleared.` : `Please hold at current position. Resume when cleared.`}
+                {activeCommand.reason ? `Please follow operator instruction: ${activeCommand.reason} Resume when cleared.` : `Please ${activeCommand.type === 'HOLD' ? 'hold at current position' : 'reroute as instructed'}. Resume when cleared.`}
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.acceptButton} onPress={async () => {
-              // Update status to ACCEPTED via API
-              try {
-                const { fetchWithAuth } = await import('@/lib/api');
-                await fetchWithAuth(`/commands/${activeCommand.id}/accept`, { method: 'POST' });
-              } catch (err) {
-                console.error("Failed to accept command", err);
-              }
+            <TouchableOpacity style={styles.acceptButton} onPress={() => {
               handleAcceptCommand();
               setActiveCommand(null);
             }}>
