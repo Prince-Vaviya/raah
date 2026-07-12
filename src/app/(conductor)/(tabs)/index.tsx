@@ -17,6 +17,7 @@ export default function DashboardScreen() {
 
   const [tripInfo, setTripInfo] = useState<any>(null);
   const [routeInfo, setRouteInfo] = useState<any>(null);
+  const [pacingInfo, setPacingInfo] = useState<any>(null);
 
   useEffect(() => {
     const initApp = async () => {
@@ -62,6 +63,26 @@ export default function DashboardScreen() {
       Location.stopLocationUpdatesAsync('BACKGROUND_LOCATION_TASK').catch(() => {});
     };
   }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (tripInfo) {
+      const fetchPacing = async () => {
+        try {
+          const res = await fetch(`http://localhost:4000/api/trips/${tripInfo.id}/pacing`);
+          if (res.ok) {
+            const data = await res.json();
+            setPacingInfo(data);
+          }
+        } catch (e) {
+          console.log("Failed to fetch pacing", e);
+        }
+      };
+      fetchPacing();
+      interval = setInterval(fetchPacing, 10000); // every 10s
+    }
+    return () => clearInterval(interval);
+  }, [tripInfo]);
   
   // Banner state
   const [bannerVisible, setBannerVisible] = useState(false);
@@ -97,8 +118,24 @@ export default function DashboardScreen() {
     showBanner('Skipped stop');
   };
 
-  const handleReportDelay = () => {
-    showBanner('Report sent to operator');
+  const reportIncident = async (type: string) => {
+    if (!tripInfo) return;
+    try {
+      const loc = await Location.getCurrentPositionAsync({});
+      await fetch('http://localhost:4000/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          tripId: tripInfo.id,
+          lat: loc.coords.latitude,
+          lng: loc.coords.longitude
+        })
+      });
+      showBanner(`${type} reported to operator!`);
+    } catch (e) {
+      console.error("Failed to report incident", e);
+    }
   };
 
   const handlePassengerSubmit = () => {
@@ -296,34 +333,48 @@ export default function DashboardScreen() {
 
           {/* Quick Actions */}
           <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
-          
+          {/* Pacing Gauge */}
+          {pacingInfo && (
+            <View style={[styles.progressCard, pacingInfo.instruction === 'SLOW_DOWN' ? { backgroundColor: '#FEF9C3', borderColor: '#EAB308', borderWidth: 1 } : {}]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={[styles.actionIconBg, { backgroundColor: pacingInfo.instruction === 'SLOW_DOWN' ? '#FEF08A' : '#ECFDF5' }]}>
+                  {pacingInfo.instruction === 'SLOW_DOWN' ? <AlertCircle size={24} color="#B45309" /> : <CheckCircle size={24} color="#10B981" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.labelSmall, { color: pacingInfo.instruction === 'SLOW_DOWN' ? '#B45309' : '#64748B' }]}>PACING GAUGE</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#1A2D40' }}>{pacingInfo.message}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={styles.actionCard} onPress={handleSkipStop}>
-              <View style={[styles.actionIconBg, { backgroundColor: '#FEF9C3' }]}>
-                <SkipForward size={20} color="#EAB308" />
-              </View>
-              <Text style={styles.actionText}>Skip Stop</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard} onPress={handleReportDelay}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => reportIncident('FLOOD')}>
               <View style={[styles.actionIconBg, { backgroundColor: '#E0EFFF' }]}>
-                <Clock size={20} color="#4285F4" />
+                <AlertCircle size={20} color="#3B82F6" />
               </View>
-              <Text style={styles.actionText}>Report Delay</Text>
+              <Text style={styles.actionText}>Report Flood</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => setModalVisible(true)}>
-              <View style={[styles.actionIconBg, { backgroundColor: '#ECFDF5' }]}>
-                <Users size={20} color="#10B981" />
+            <TouchableOpacity style={styles.actionCard} onPress={() => reportIncident('ACCIDENT')}>
+              <View style={[styles.actionIconBg, { backgroundColor: '#FEE2E2' }]}>
+                <AlertCircle size={20} color="#EF4444" />
               </View>
-              <Text style={styles.actionText}>Passenger{'\n'}Count</Text>
+              <Text style={styles.actionText}>Accident</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={handleOperatorChat}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => reportIncident('ROADWORK')}>
+              <View style={[styles.actionIconBg, { backgroundColor: '#FEF9C3' }]}>
+                <AlertCircle size={20} color="#EAB308" />
+              </View>
+              <Text style={styles.actionText}>Roadwork</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => reportIncident('PROTEST')}>
               <View style={[styles.actionIconBg, { backgroundColor: '#F3E8FF' }]}>
-                <MessageSquare size={20} color="#A855F7" />
+                <AlertCircle size={20} color="#A855F7" />
               </View>
-              <Text style={styles.actionText}>Operator Chat</Text>
+              <Text style={styles.actionText}>Protest/VIP</Text>
             </TouchableOpacity>
           </View>
 

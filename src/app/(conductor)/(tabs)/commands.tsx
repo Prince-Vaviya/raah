@@ -17,12 +17,36 @@ export default function CommandsScreen() {
   const [activeCommand, setActiveCommand] = useState<any>(null);
   
   React.useEffect(() => {
-    // Assuming trip_id is contextually available. For demo, we just listen to all commands.
-    // Subscribe to new commands (mock WS for now)
-    // const ws = new WebSocket(WS_URL);
-    // ws.onmessage = (e) => { ... }
-    // return () => ws.close();
-  }, []);
+    const fetchCommands = async () => {
+      try {
+        // In a real app, you'd pass the specific tripId. Here we just fetch the latest PENDING command.
+        const res = await fetch('http://localhost:4000/api/commands');
+        if (res.ok) {
+          const data = await res.json();
+          const pending = data.find((c: any) => c.status === 'PENDING');
+          if (pending && (!activeCommand || activeCommand.id !== pending.id)) {
+            setActiveCommand({
+              id: pending.id,
+              trip_id: pending.tripId,
+              type: pending.type,
+              duration_sec: pending.durationSec,
+              reason: pending.reason,
+              created_at: pending.createdAt
+            });
+          } else if (!pending && activeCommand) {
+             // If someone else cleared it, or there are no pending commands
+             // setActiveCommand(null); 
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch commands", e);
+      }
+    };
+    
+    fetchCommands();
+    const interval = setInterval(fetchCommands, 3000);
+    return () => clearInterval(interval);
+  }, [activeCommand]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [clarifyReason, setClarifyReason] = useState('');
@@ -50,28 +74,52 @@ export default function CommandsScreen() {
     });
   };
 
-  const handleAcceptCommand = () => {
-    showBanner('Executing command ...', () => {
-      setIsCommandExecuted(true);
-    });
+  const handleAcceptCommand = async () => {
+    if (!activeCommand) return;
+    try {
+      const token = ''; // Add logic to get token if auth is required
+      await fetch(`http://localhost:4000/api/commands/${activeCommand.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ACCEPTED' })
+      });
+      showBanner('Executing command ...', () => {
+        setIsCommandExecuted(true);
+      });
+    } catch (e) {
+      console.error("Failed to accept command", e);
+    }
   };
 
   const handleRejectCommand = () => {
     setModalVisible(true);
   };
 
-  const handleClarifySubmit = () => {
+  const handleClarifySubmit = async () => {
     if (clarifyReason.trim() !== '') {
+      if (activeCommand) {
+        try {
+          await fetch(`http://localhost:4000/api/commands/${activeCommand.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'REJECTED' })
+          });
+        } catch (e) {
+          console.error("Failed to reject command", e);
+        }
+      }
       setModalVisible(false);
       setClarifyReason('');
+      setActiveCommand(null);
       showBanner('Rejected command and clarified ...');
     }
   };
 
   const handleReturnToDashboard = () => {
     setIsCommandExecuted(false);
+    setActiveCommand(null);
     // @ts-ignore
-    router.push('Dashboard');
+    router.push('/');
   };
 
   if (isCommandExecuted) {
