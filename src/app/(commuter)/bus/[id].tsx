@@ -152,7 +152,6 @@ export default function BusDetailScreen() {
           </View>
           <Text style={styles.statusText}>On time • 3 min away</Text>
 
-          {/* Feature Cards */}
           <View style={styles.featuresRow}>
             <View style={styles.featureCard}>
               <Ionicons name="location" size={20} color="#64748B" />
@@ -160,12 +159,22 @@ export default function BusDetailScreen() {
             </View>
 
             <View style={styles.featureCard}>
-              <Ionicons name="accessibility" size={20} color="#007AFF" />
-              <Text style={styles.featureText}>Accessible</Text>
+              <Ionicons name="people" size={20} color="#EF4444" />
+              <Text style={[styles.featureText, { color: '#EF4444' }]}>High Crowding</Text>
             </View>
+
             <View style={styles.featureCard}>
-              <Ionicons name="people" size={20} color="#64748B" />
-              <Text style={styles.featureText}>Low crowd</Text>
+              <Ionicons name="shield-checkmark" size={20} color="#10B981" />
+              <Text style={[styles.featureText, { color: '#10B981' }]}>High Confidence</Text>
+            </View>
+          </View>
+
+          {/* Hold Reasoning Banner */}
+          <View style={{ backgroundColor: '#FEF9C3', borderColor: '#EAB308', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Ionicons name="alert-circle" size={24} color="#B45309" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#B45309' }}>Bus Held by Operator</Text>
+              <Text style={{ fontSize: 13, color: '#854D0E', marginTop: 2 }}>Held for spacing to prevent bunching. Will depart in 1 min.</Text>
             </View>
           </View>
 

@@ -104,7 +104,6 @@ export default function HomeScreen() {
 
           {/* Search Bar area with mascot */}
           <View style={styles.searchSection}>
-            {/* Mascot Placeholder */}
             <View style={styles.searchBar}>
               <Ionicons name="search" size={20} color="#999" />
               <TextInput
@@ -117,6 +116,17 @@ export default function HomeScreen() {
                 returnKeyType="search"
               />
               <Ionicons name="mic" size={20} color="#007AFF" />
+            </View>
+
+            {/* AI Travel Tip */}
+            <View style={styles.aiTipContainer}>
+              <View style={styles.aiTipIconBg}>
+                <Ionicons name="sparkles" size={16} color="#A855F7" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.aiTipTitle}>Smart Tip</Text>
+                <Text style={styles.aiTipText}>Route 69 is running 5 mins late due to flooding. Take Route 84 instead.</Text>
+              </View>
             </View>
           </View>
         </SafeAreaView>
@@ -265,26 +275,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 8,
   },
+  searchSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
   searchBar: {
-    flex: 1,
-    backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
     paddingHorizontal: 16,
     height: 56,
-    borderRadius: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 12,
+    height: '100%',
+    marginHorizontal: 12,
     fontSize: 16,
-    color: '#000',
+    color: '#333',
+  },
+  aiTipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    padding: 12,
+    marginTop: 4,
+    gap: 12,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  aiTipIconBg: {
+    backgroundColor: '#F3E8FF',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiTipTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#A855F7',
+    marginBottom: 2,
+  },
+  aiTipText: {
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 18,
   },
   mainContent: {
     paddingTop: 32,

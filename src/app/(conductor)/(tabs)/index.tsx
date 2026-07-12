@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Animated, Modal, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowRight, SkipForward, Clock, Users, MessageSquare, AlertCircle, Square, CheckCircle, ArrowLeft, MapPin, Route, User } from 'lucide-react-native';
+import { ArrowRight, SkipForward, Clock, Users, MessageSquare, AlertCircle, Square, CheckCircle, ArrowLeft, MapPin, Route, User, Wrench } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 
@@ -93,8 +93,41 @@ export default function DashboardScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [passengerCount, setPassengerCount] = useState('');
 
+  // Maintenance modal state
+  const [healthModalVisible, setHealthModalVisible] = useState(false);
+  const [healthIssueType, setHealthIssueType] = useState('AC');
+  const [healthDescription, setHealthDescription] = useState('');
+
+  // Broadcast state
+  const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
+
   // Trip completion state
   const [isTripCompleted, setIsTripCompleted] = useState(false);
+
+  useEffect(() => {
+    let broadcastInterval: NodeJS.Timeout;
+    if (tripInfo) {
+      const fetchBroadcasts = async () => {
+        try {
+          const loc = await Location.getCurrentPositionAsync({});
+          const res = await fetch(`http://localhost:4000/api/broadcasts/active?lat=${loc.coords.latitude}&lng=${loc.coords.longitude}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+              setActiveBroadcast(data[0]);
+            } else {
+              setActiveBroadcast(null);
+            }
+          }
+        } catch (e) {
+          console.log("Failed to fetch broadcasts", e);
+        }
+      };
+      fetchBroadcasts();
+      broadcastInterval = setInterval(fetchBroadcasts, 10000); // every 10s
+    }
+    return () => clearInterval(broadcastInterval);
+  }, [tripInfo]);
 
   const showBanner = (message: string) => {
     setBannerMessage(message);
@@ -135,6 +168,26 @@ export default function DashboardScreen() {
       showBanner(`${type} reported to operator!`);
     } catch (e) {
       console.error("Failed to report incident", e);
+    }
+  };
+
+  const reportHealthIssue = async () => {
+    if (!tripInfo) return;
+    try {
+      await fetch('http://localhost:4000/api/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: tripInfo.id,
+          issueType: healthIssueType,
+          description: healthDescription
+        })
+      });
+      setHealthModalVisible(false);
+      setHealthDescription('');
+      showBanner(`Maintenance logged for Depot!`);
+    } catch (e) {
+      console.error("Failed to log maintenance", e);
     }
   };
 
@@ -376,6 +429,13 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.actionText}>Protest/VIP</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => setHealthModalVisible(true)}>
+              <View style={[styles.actionIconBg, { backgroundColor: '#F1F5F9' }]}>
+                <Wrench size={20} color="#475569" />
+              </View>
+              <Text style={styles.actionText}>Bus Health</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Bottom Actions */}
@@ -393,6 +453,69 @@ export default function DashboardScreen() {
 
         </ScrollView>
       </SafeAreaView>
+
+      {/* Maintenance Modal */}
+      <Modal visible={healthModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Log Maintenance Issue</Text>
+              <TouchableOpacity onPress={() => setHealthModalVisible(false)}>
+                <AlertCircle size={24} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalLabel}>Issue Type</Text>
+            <View style={styles.issueTypeGrid}>
+              {['AC', 'Engine', 'Wipers', 'Tyre', 'Doors', 'Other'].map((type) => (
+                <TouchableOpacity 
+                  key={type} 
+                  style={[styles.issueTypeBtn, healthIssueType === type && styles.issueTypeBtnActive]}
+                  onPress={() => setHealthIssueType(type)}
+                >
+                  <Text style={[styles.issueTypeText, healthIssueType === type && styles.issueTypeTextActive]}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Description (Optional)</Text>
+            <TextInput
+              style={styles.healthModalInput}
+              placeholder="E.g. AC is leaking water near front seat"
+              value={healthDescription}
+              onChangeText={setHealthDescription}
+              multiline
+            />
+
+            <TouchableOpacity style={styles.modalSubmitBtn} onPress={reportHealthIssue}>
+              <Text style={styles.modalSubmitText}>Submit to Depot</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Broadcast Modal */}
+      <Modal visible={!!activeBroadcast} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { borderColor: '#EAB308', borderWidth: 2 }]}>
+            <View style={[styles.modalHeader, { justifyContent: 'center' }]}>
+              <AlertCircle size={32} color="#EAB308" style={{ marginBottom: 16 }} />
+            </View>
+            <Text style={[styles.modalTitle, { textAlign: 'center', fontSize: 20 }]}>Zone Broadcast Alert</Text>
+            
+            <View style={{ backgroundColor: '#FEF9C3', padding: 16, borderRadius: 12, marginVertical: 16 }}>
+              <Text style={{ fontSize: 18, color: '#854D0E', fontWeight: '600', textAlign: 'center' }}>
+                {activeBroadcast?.message}
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.modalSubmitBtn} onPress={() => setActiveBroadcast(null)}>
+              <Text style={styles.modalSubmitText}>Acknowledge</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -684,6 +807,35 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  issueTypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  issueTypeBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+  },
+  issueTypeBtnActive: {
+    backgroundColor: '#3B82F6',
+  },
+  issueTypeText: {
+    fontWeight: '600',
+    color: '#475569',
+  },
+  issueTypeTextActive: {
+    color: '#FFFFFF',
+  },
   modalInput: {
     width: '100%',
     backgroundColor: '#F8FAFC',
@@ -696,6 +848,16 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     textAlign: 'center',
     marginBottom: 24,
+  },
+  healthModalInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
+    marginBottom: 24,
+    minHeight: 100,
+    textAlignVertical: 'top',
   },
   modalActions: {
     flexDirection: 'row',
