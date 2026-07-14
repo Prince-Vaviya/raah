@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { API_URL } from '@/lib/api';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function LoginScreen() {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: employeeId, password }),
@@ -24,7 +25,7 @@ export default function LoginScreen() {
 
       // If login fails, try to register them (for demo purposes)
       if (!response.ok) {
-        const regRes = await fetch('http://localhost:4000/api/auth/register', {
+        const regRes = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 

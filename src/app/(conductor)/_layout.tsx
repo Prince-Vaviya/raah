@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { API_URL } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import VerificationScreen from '../../components/VerificationScreen';
 
@@ -21,7 +22,7 @@ export default function ConductorLayout() {
         return;
       }
       
-      const res = await fetch('http://localhost:4000/api/auth/me', {
+      const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {

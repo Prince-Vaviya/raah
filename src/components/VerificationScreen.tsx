@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/lib/api';
 
 export default function VerificationScreen({ 
   verificationStatus,
@@ -22,7 +23,7 @@ export default function VerificationScreen({
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await fetch('http://localhost:4000/api/auth/verification-request', {
+      const res = await fetch(`${API_URL}/auth/verification-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

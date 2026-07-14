@@ -1,10 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// In Expo/React Native, localhost points to the device itself.
-// We need to use the explicit IP address of the dev machine or 10.0.2.2 for Android emulators.
-// Assuming iOS Simulator for now, but often 127.0.0.1 or localhost works on iOS sim.
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.102:4000/api';
-export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.0.102:4000/ws';
+import Constants from 'expo-constants';
+
+const getHostIP = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  if (debuggerHost) {
+    return `http://${debuggerHost.split(':')[0]}:4000/api`;
+  }
+  return 'http://192.168.0.102:4000/api';
+};
+
+const getWsIP = () => {
+  if (process.env.EXPO_PUBLIC_WS_URL) return process.env.EXPO_PUBLIC_WS_URL;
+  const debuggerHost = Constants.expoConfig?.hostUri;
+  if (debuggerHost) {
+    return `ws://${debuggerHost.split(':')[0]}:4000/ws`;
+  }
+  return 'ws://192.168.0.102:4000/ws';
+};
+
+export const API_URL = getHostIP();
+export const WS_URL = getWsIP();
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = await AsyncStorage.getItem('token');
