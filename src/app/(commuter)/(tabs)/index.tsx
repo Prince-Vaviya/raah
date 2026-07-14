@@ -173,7 +173,7 @@ export default function HomeScreen() {
                 isLive={true}
                 price={bus.price || '₹12'}
                 occupancyLevel={i === 0 ? 1 : 2}
-                href={`/bus/${bus.id}`}
+                href={`/bus/${bus.routeName || '101'}?destination=${bus.destination || 'City Center'}&fare=${bus.price || '₹12'}`}
               />
             )) : (
               <View style={{ padding: 20 }}>
