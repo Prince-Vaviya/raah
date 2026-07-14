@@ -11,8 +11,14 @@ module.exports = (() => {
   };
   config.resolver = {
     ...resolver,
-    assetExts: resolver.assetExts.filter((ext) => ext !== 'svg'),
-    sourceExts: [...resolver.sourceExts, 'svg']
+    assetExts: [...resolver.assetExts.filter((ext) => ext !== 'svg'), 'wasm'],
+    sourceExts: [...resolver.sourceExts, 'svg'],
+    resolveRequest: (context, moduleName, platform) => {
+      if (platform === 'web' && moduleName === 'react-native-maps') {
+        return context.resolveRequest(context, '@teovilla/react-native-web-maps', platform);
+      }
+      return context.resolveRequest(context, moduleName, platform);
+    }
   };
 
   return config;

@@ -178,6 +178,15 @@ export default function BusDetailScreen() {
             </View>
           </View>
 
+          {/* Express Mode Banner */}
+          <View style={{ backgroundColor: '#DCFCE7', borderColor: '#22C55E', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Ionicons name="flash" size={24} color="#15803D" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#15803D' }}>Express Mode Active</Text>
+              <Text style={{ fontSize: 13, color: '#166534', marginTop: 2 }}>This bus is skipping the next 3 stops to catch up to its schedule. Only board if travelling further.</Text>
+            </View>
+          </View>
+
           {/* Timeline */}
           <Text style={styles.timelineTitle}>Route Timeline</Text>
           <View style={styles.timelineContainer}>

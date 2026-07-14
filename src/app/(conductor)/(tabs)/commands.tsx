@@ -280,7 +280,12 @@ export default function CommandsScreen() {
                 <Text style={styles.priorityText}>HIGH PRIORITY</Text>
               </View>
             </View>
-            <Text style={styles.commandTitle}>{activeCommand.type === 'HOLD' ? 'Hold Bus' : 'Reroute'}</Text>
+            <Text style={styles.commandTitle}>
+              {activeCommand.type === 'HOLD' ? 'Hold Bus' : 
+               activeCommand.type === 'REROUTE' ? 'Reroute' : 
+               activeCommand.type === 'EXPRESS' ? 'Express Mode' : 
+               activeCommand.type === 'SHORT_LOOP' ? 'Short Loop' : 'Command'}
+            </Text>
             <Text style={styles.vehicleNumber}>Trip ID: {activeCommand.trip_id?.substring(0,8)}...</Text>
           </View>
 
@@ -317,11 +322,16 @@ export default function CommandsScreen() {
               </View>
             </View>
 
-            {/* Operator Note */}
             <View style={styles.noteContainer}>
               <Text style={styles.noteLabel}>OPERATOR NOTE</Text>
               <Text style={styles.noteText}>
-                {activeCommand.reason ? `Please follow operator instruction: ${activeCommand.reason} Resume when cleared.` : `Please ${activeCommand.type === 'HOLD' ? 'hold at current position' : 'reroute as instructed'}. Resume when cleared.`}
+                {activeCommand.type === 'EXPRESS' 
+                  ? `Please skip the next 3 stops (drop-offs only) to catch up to the schedule. ${activeCommand.reason || ''}`
+                  : activeCommand.type === 'SHORT_LOOP'
+                  ? `Dispatch as Short-Loop to clear crowd surge. ${activeCommand.reason || ''}`
+                  : activeCommand.reason 
+                  ? `Please follow operator instruction: ${activeCommand.reason} Resume when cleared.` 
+                  : `Please ${activeCommand.type === 'HOLD' ? 'hold at current position' : 'reroute as instructed'}. Resume when cleared.`}
               </Text>
             </View>
 

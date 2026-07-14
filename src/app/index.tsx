@@ -14,20 +14,47 @@ export default function LoginScreen() {
     }
 
     try {
-      // Bypassing actual authentication as requested. Any credentials will work!
-      
-      // We still store a mock token so the rest of the app thinks we are logged in
-      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-      await AsyncStorage.setItem('token', 'mock_token_123');
-      await AsyncStorage.setItem('user', JSON.stringify({ id: 1, email: employeeId, role: role }));
+      const response = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: employeeId, password }),
+      });
 
-      if (role === 'commuter') {
+      let data = await response.json();
+
+      // If login fails, try to register them (for demo purposes)
+      if (!response.ok) {
+        const regRes = await fetch('http://localhost:4000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: employeeId, 
+            password, 
+            name: employeeId, 
+            role: role.toUpperCase() 
+          }),
+        });
+        
+        if (!regRes.ok) {
+          const err = await regRes.json();
+          alert('Error: ' + (err.error || 'Failed to login/register'));
+          return;
+        }
+        data = await regRes.json();
+      }
+
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+
+      if (data.user.role === 'COMMUTER') {
         router.push('/(commuter)/');
       } else {
         router.push('/(conductor)/');
       }
     } catch (err) {
       console.error("Routing error", err);
+      alert('Network error connecting to backend');
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Animated, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Animated, Modal, TextInput, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight, SkipForward, Clock, Users, MessageSquare, AlertCircle, Square, CheckCircle, ArrowLeft, MapPin, Route, User, Wrench } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -37,21 +37,23 @@ export default function DashboardScreen() {
           // Start tracking
           let { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
           if (fgStatus !== 'granted') return;
-          await Location.requestBackgroundPermissionsAsync();
+          
+          if (Platform.OS !== 'web') {
+            await Location.requestBackgroundPermissionsAsync();
+            await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
+              accuracy: Location.Accuracy.High,
+              timeInterval: 5000,
+              distanceInterval: 10,
+              foregroundService: {
+                notificationTitle: 'Live Trip Tracking Active',
+                notificationBody: 'You are sharing your bus location with commuters.',
+                notificationColor: '#4285F4',
+              },
+            });
+          }
           
           const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
           await AsyncStorage.setItem('activeTripId', activeTrip.id);
-
-          await Location.startLocationUpdatesAsync('BACKGROUND_LOCATION_TASK', {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 5000,
-            distanceInterval: 10,
-            foregroundService: {
-              notificationTitle: 'Live Trip Tracking Active',
-              notificationBody: 'You are sharing your bus location with commuters.',
-              notificationColor: '#4285F4',
-            },
-          });
         }
       } catch (err) {
         console.error("Failed to init conductor app", err);
@@ -61,7 +63,9 @@ export default function DashboardScreen() {
     initApp();
 
     return () => {
-      Location.stopLocationUpdatesAsync('BACKGROUND_LOCATION_TASK').catch(() => {});
+      if (Platform.OS !== 'web') {
+        Location.stopLocationUpdatesAsync('BACKGROUND_LOCATION_TASK').catch(() => {});
+      }
     };
   }, []);
 
@@ -398,13 +402,25 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
           {/* Pacing Gauge */}
           {pacingInfo && (
-            <View style={[styles.progressCard, pacingInfo.instruction === 'SLOW_DOWN' ? { backgroundColor: '#FEF9C3', borderColor: '#EAB308', borderWidth: 1 } : {}]}>
+            <View style={[
+              styles.progressCard, 
+              pacingInfo.instruction === 'SLOW_DOWN' ? { backgroundColor: '#FEF9C3', borderColor: '#EAB308', borderWidth: 1 } : {},
+              pacingInfo.instruction === 'SPEED_UP' ? { backgroundColor: '#FEE2E2', borderColor: '#EF4444', borderWidth: 1 } : {}
+            ]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={[styles.actionIconBg, { backgroundColor: pacingInfo.instruction === 'SLOW_DOWN' ? '#FEF08A' : '#ECFDF5' }]}>
-                  {pacingInfo.instruction === 'SLOW_DOWN' ? <AlertCircle size={24} color="#B45309" /> : <CheckCircle size={24} color="#10B981" />}
+                <View style={[
+                  styles.actionIconBg, 
+                  { backgroundColor: pacingInfo.instruction === 'SLOW_DOWN' ? '#FEF08A' : pacingInfo.instruction === 'SPEED_UP' ? '#FECACA' : '#ECFDF5' }
+                ]}>
+                  {pacingInfo.instruction === 'SLOW_DOWN' ? <AlertCircle size={24} color="#B45309" /> : 
+                   pacingInfo.instruction === 'SPEED_UP' ? <SkipForward size={24} color="#B91C1C" /> : 
+                   <CheckCircle size={24} color="#10B981" />}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.labelSmall, { color: pacingInfo.instruction === 'SLOW_DOWN' ? '#B45309' : '#64748B' }]}>PACING GAUGE</Text>
+                  <Text style={[
+                    styles.labelSmall, 
+                    { color: pacingInfo.instruction === 'SLOW_DOWN' ? '#B45309' : pacingInfo.instruction === 'SPEED_UP' ? '#B91C1C' : '#64748B' }
+                  ]}>PACING GAUGE</Text>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#1A2D40' }}>{pacingInfo.message}</Text>
                 </View>
               </View>
@@ -894,6 +910,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     borderRadius: 12,
     backgroundColor: '#10B981',
+  },
+  modalSubmitBtn: {
+    width: '100%',
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#EAB308',
+    marginTop: 8,
   },
   modalSubmitText: {
     fontSize: 16,
