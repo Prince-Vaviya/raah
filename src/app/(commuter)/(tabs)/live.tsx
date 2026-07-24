@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { StyleSheet, View, Text, Pressable, Dimensions, ScrollView, Animated, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,10 +12,13 @@ const { width, height } = Dimensions.get('window');
 export default function LiveScreen() {
   const router = useRouter();
   const { activeJourney, completeJourney } = useJourney();
+  const busAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
 
   // Animation values for draggable bottom sheet
   const panY = useRef(new Animated.Value(0)).current;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const lastPosition = useRef<{lat: number, lng: number} | null>(null);
+  const animFrameRef = useRef<number | null>(null);
   
   const MAX_DOWNWARD_TRANSLATE_Y = height * 0.45; // Max drag down distance
   const MIN_UPWARD_TRANSLATE_Y = 0; // Max drag up distance (original position)
