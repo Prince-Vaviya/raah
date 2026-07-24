@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertTriangle, Clock, Info, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useNotif } from '@/context/conductor/NotifContext';
 
 const mockAlerts = [
   {
@@ -32,6 +33,8 @@ const mockAlerts = [
 
 export default function AlertsScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const { readAlert } = useNotif();
 
   const getIcon = (type: string) => {
     switch(type) {
@@ -50,10 +53,20 @@ export default function AlertsScreen() {
         {mockAlerts.map(alert => {
           const isExpanded = expandedId === alert.id;
           return (
-            <TouchableOpacity 
-              key={alert.id} 
+            <TouchableOpacity
+              key={alert.id}
               style={styles.alertCard}
-              onPress={() => setExpandedId(isExpanded ? null : alert.id)}
+              onPress={() => {
+                if (isExpanded) {
+                  setExpandedId(null);
+                } else {
+                  setExpandedId(alert.id);
+                  if (!readIds.has(alert.id)) {
+                    setReadIds(prev => new Set(prev).add(alert.id));
+                    readAlert();
+                  }
+                }
+              }}
               activeOpacity={0.7}
             >
               <View style={styles.cardHeader}>

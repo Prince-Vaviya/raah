@@ -82,7 +82,7 @@ export default function SearchResultsScreen() {
               />
             ))
           ) : (
-            <Text style={{ color: '#64748B', textAlign: 'center', marginTop: 20 }}>No routes found.</Text>
+            <Text style={{ color: '#64748B', textAlign: 'center', marginTop: 20 }}>Fetching routes...</Text>
           )}
         </View>
 

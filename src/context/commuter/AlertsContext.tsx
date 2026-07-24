@@ -46,7 +46,7 @@ const initialAlerts: Alert[] = [
   {
     id: '5',
     type: 'info',
-    title: 'Platform Maintenance — Bandra Stn',
+    title: 'Platform Maintenance — Sanpada Stn',
     description: 'Platform 2 under maintenance until 6 PM. Use Platform 1 or 3 for boarding.',
     time: '2 hr ago',
     isRead: false,

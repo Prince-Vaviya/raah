@@ -8,7 +8,7 @@ const getHostIP = () => {
   if (debuggerHost) {
     return `http://${debuggerHost.split(':')[0]}:4000/api`;
   }
-  return 'http://192.168.0.102:4000/api';
+  return 'http://localhost:4000/api';
 };
 
 const getWsIP = () => {
@@ -17,7 +17,7 @@ const getWsIP = () => {
   if (debuggerHost) {
     return `ws://${debuggerHost.split(':')[0]}:4000/ws`;
   }
-  return 'ws://192.168.0.102:4000/ws';
+  return 'ws://localhost:4000/ws';
 };
 
 export const API_URL = getHostIP();

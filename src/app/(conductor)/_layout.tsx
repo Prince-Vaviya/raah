@@ -4,6 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { API_URL } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import VerificationScreen from '../../components/VerificationScreen';
+import { NotifProvider } from '@/context/conductor/NotifContext';
 
 export default function ConductorLayout() {
   const router = useRouter();
@@ -57,10 +58,12 @@ export default function ConductorLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="operatorChat" />
-      <Stack.Screen name="location" />
-    </Stack>
+    <NotifProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="operatorChat" />
+        <Stack.Screen name="location" />
+      </Stack>
+    </NotifProvider>
   );
 }

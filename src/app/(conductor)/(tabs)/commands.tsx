@@ -4,6 +4,7 @@ import {  SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context
 import {  Bell, Clock, AlertTriangle, CheckCircle, ArrowLeft, Check, Play } from 'lucide-react-native';
 import {  useRouter, useNavigation } from 'expo-router';
 import { API_URL, fetchWithAuth } from '@/lib/api';
+import { useNotif } from '@/context/conductor/NotifContext';
 
 export default function CommandsScreen() {
   const router = useRouter();
@@ -16,21 +17,24 @@ export default function CommandsScreen() {
 
   // Realtime Command State
   const [activeCommand, setActiveCommand] = useState<any>(null);
-  
+  const { setCommandCount } = useNotif();
+
   React.useEffect(() => {
     const fetchCommands = async () => {
       try {
         const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
         const activeTripId = await AsyncStorage.getItem('activeTripId');
-        
-        const url = activeTripId 
-          ? `/commands?tripId=${activeTripId}` 
+
+        const url = activeTripId
+          ? `/commands?tripId=${activeTripId}`
           : `/commands`;
-          
+
         const res = await fetchWithAuth(url);
         if (res.ok) {
           const data = await res.json();
-          const pending = data.find((c: any) => c.status === 'PENDING');
+          const pendingCommands = data.filter((c: any) => c.status === 'PENDING');
+          setCommandCount(pendingCommands.length);
+          const pending = pendingCommands[0];
           if (pending && (!activeCommand || activeCommand.id !== pending.id)) {
             setActiveCommand({
               id: pending.id,
@@ -41,15 +45,14 @@ export default function CommandsScreen() {
               created_at: pending.createdAt
             });
           } else if (!pending && activeCommand) {
-             // If someone else cleared it, or there are no pending commands
-             // setActiveCommand(null); 
+             setActiveCommand(null);
           }
         }
       } catch (e) {
         console.error("Failed to fetch commands", e);
       }
     };
-    
+
     fetchCommands();
     const interval = setInterval(fetchCommands, 3000);
     return () => clearInterval(interval);

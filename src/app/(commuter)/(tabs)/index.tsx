@@ -95,7 +95,7 @@ export default function HomeScreen() {
               <Text style={styles.name}>{userName}</Text>
               <View style={styles.locationContainer}>
                 <Ionicons name="location" size={14} color="#007AFF" />
-                <Text style={styles.locationText}>Bandra West, Mumbai</Text>
+                <Text style={styles.locationText}>Sanpada, Navi Mumbai</Text>
               </View>
             </View>
             <View style={styles.headerActions}>
@@ -120,26 +120,15 @@ export default function HomeScreen() {
               />
               <Ionicons name="mic" size={20} color="#007AFF" />
             </View>
-
-            {/* AI Travel Tip */}
-            <View style={styles.aiTipContainer}>
-              <View style={styles.aiTipIconBg}>
-                <Ionicons name="sparkles" size={16} color="#A855F7" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.aiTipTitle}>Smart Tip</Text>
-                <Text style={styles.aiTipText}>Route 69 is running 5 mins late due to flooding. Take Route 84 instead.</Text>
-              </View>
-            </View>
           </View>
         </SafeAreaView>
 
         <View style={styles.mainContent}>
           {/* Quick Actions */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionsScroll} contentContainerStyle={styles.actionsContent}>
-            <ActionChip title="Home" subtitle="Bandra" iconName="home" iconColor="#FF9800" />
+            <ActionChip title="Home" subtitle="Sanpada" iconName="home" iconColor="#FF9800" />
             <ActionChip title="Work" subtitle="BKC" iconName="briefcase" iconColor="#795548" />
-            <ActionChip title="College" subtitle="Andheri" iconName="school" iconColor="#212225" />
+            <ActionChip title="College" subtitle="Kharghar" iconName="school" iconColor="#212225" />
             <ActionChip title="Saved" subtitle="Places" iconName="star" iconColor="#FFC107" />
           </ScrollView>
 
@@ -260,23 +249,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-  },
-  searchSection: {
-    marginTop: 32,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    position: 'relative',
-    height: 80,
-  },
-  mascotPlaceholder: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-    width: 80,
-    height: 80,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 8,
   },
   searchSection: {
     paddingHorizontal: 20,

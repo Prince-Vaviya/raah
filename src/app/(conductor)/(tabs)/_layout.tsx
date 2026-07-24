@@ -1,8 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { LayoutDashboard, Map, Bell, User, Command } from 'lucide-react-native';
+import { useNotif } from '@/context/conductor/NotifContext';
 
 export default function ConductorTabLayout() {
+  const { commandCount, alertCount } = useNotif();
+
   return (
     <Tabs
       screenOptions={{
@@ -46,7 +49,7 @@ export default function ConductorTabLayout() {
         name="alerts"
         options={{
           title: 'Alerts',
-          tabBarBadge: 3, // Hardcoded or from context, as it was in original
+          tabBarBadge: alertCount > 0 ? alertCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: '#EF4444',
             color: '#FFFFFF',
@@ -64,7 +67,7 @@ export default function ConductorTabLayout() {
         name="commands"
         options={{
           title: 'Commands',
-          tabBarBadge: 1, // Hardcoded or from context, as it was in original
+          tabBarBadge: commandCount > 0 ? commandCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: '#EF4444',
             color: '#FFFFFF',

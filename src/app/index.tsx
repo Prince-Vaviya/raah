@@ -49,9 +49,9 @@ export default function LoginScreen() {
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
 
       if (data.user.role === 'COMMUTER') {
-        router.push('/(commuter)/');
+        router.push('./(commuter)/');
       } else {
-        router.push('/(conductor)/');
+        router.push('./(conductor)/');
       }
     } catch (err) {
       console.error("Routing error", err);

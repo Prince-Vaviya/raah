@@ -10,11 +10,11 @@ export default function JourneyStartedScreen() {
 
   const handleGoHome = () => {
     // Navigate directly back to the main home tab
-    router.replace('/(tabs)');
+    router.replace('/(commuter)/(tabs)');
   };
 
   const displayDestination = destination || 'Andheri Station';
-  const displayFrom = from || 'Bandra Station (W)';
+  const displayFrom = from || 'Sanpada';
 
   return (
     <SafeAreaView style={styles.container}>

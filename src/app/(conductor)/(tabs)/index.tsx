@@ -520,28 +520,6 @@ export default function DashboardScreen() {
         </View>
       </Modal>
 
-      {/* Broadcast Modal */}
-      <Modal visible={!!activeBroadcast} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { borderColor: '#EAB308', borderWidth: 2 }]}>
-            <View style={[styles.header, { justifyContent: 'center' }]}>
-              <AlertCircle size={32} color="#EAB308" style={{ marginBottom: 16 }} />
-            </View>
-            <Text style={[styles.modalTitle, { textAlign: 'center', fontSize: 20 }]}>Zone Broadcast Alert</Text>
-            
-            <View style={{ backgroundColor: '#FEF9C3', padding: 16, borderRadius: 12, marginVertical: 16 }}>
-              <Text style={{ fontSize: 18, color: '#854D0E', fontWeight: '600', textAlign: 'center' }}>
-                {activeBroadcast?.message}
-              </Text>
-            </View>
-
-            <TouchableOpacity style={styles.modalSubmit} onPress={() => setActiveBroadcast(null)}>
-              <Text style={styles.modalSubmitText}>Acknowledge</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
     </View>
   );
 }
